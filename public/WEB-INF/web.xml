@@ -5,8 +5,20 @@
          http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
          version="3.1">
     
+    <!-- Handle client-side routing -->
     <error-page>
         <error-code>404</error-code>
-        <location>/index.html</location>
+        <location>/orion/index.html</location>
     </error-page>
+
+    <!-- Redirect root to index.html -->
+    <welcome-file-list>
+        <welcome-file>index.html</welcome-file>
+    </welcome-file-list>
+
+    <!-- Force all requests through index.html -->
+    <servlet-mapping>
+        <servlet-name>default</servlet-name>
+        <url-pattern>/</url-pattern>
+    </servlet-mapping>
 </web-app>
