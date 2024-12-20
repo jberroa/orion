@@ -19,11 +19,9 @@ import { Dashboard } from "./pages/Dashboard";
 import { Documentation } from "./pages/Documentation";
 import { Configuration } from "./pages/Configuration";
 import { Settings } from "./pages/Settings";
-import { BrowserRouter as Router } from 'react-router-dom'
 
 function App() {
   return (
-    <Router basename="/orion">
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
@@ -56,7 +54,6 @@ function App() {
           </main>
         </SidebarInset>
       </SidebarProvider>
-    </Router>
   );
 }
 
