@@ -13,7 +13,6 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    copyPublicDir: true,
   },
   base: '/orion/',
 });
