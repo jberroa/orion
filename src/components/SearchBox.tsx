@@ -20,28 +20,38 @@ import {
 
 const frameworks = [
     {
-      value: "next.js",
-      label: "Next.js",
+      value: "jarvis",
+      label: "jarvis",
     },
     {
-      value: "sveltekit",
-      label: "SvelteKit",
+      value: "vonthedon",
+      label: "vonthedon",
     },
     {
-      value: "nuxt.js",
-      label: "Nuxt.js",
+      value: "theoffice",
+      label: "theoffice",
     },
     {
-      value: "remix",
-      label: "Remix",
+      value: "munchkin",
+      label: "munchkin",
     },
     {
-      value: "astro",
-      label: "Astro",
+      value: "arcus",
+      label: "arcus",
     },
   ]
 
-  export function SearchBox () {
+interface SearchBoxProps {
+  placeholder?: string;
+  items?: Array<{ value: string; label: string }>;
+  onSelect?: (value: string) => void;
+}
+
+export function SearchBox({ 
+  placeholder = "Select QA Box",
+  items = frameworks,
+  onSelect
+}: SearchBoxProps) {
   const [open, setOpen] = React.useState(false)
   const [value, setValue] = React.useState("")
  
@@ -55,31 +65,32 @@ const frameworks = [
           className="w-[200px] justify-between"
         >
           {value
-            ? frameworks.find((framework) => framework.value === value)?.label
-            : "Select QA Box"}
+            ? items.find((item) => item.value === value)?.label
+            : placeholder}
           <ChevronsUpDown className="opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[200px] p-0">
         <Command>
-          <CommandInput placeholder="Search QA Box..." className="h-9" />
+          <CommandInput placeholder={`Search ${placeholder}...`} className="h-9" />
           <CommandList>
-            <CommandEmpty>QA Box not found.</CommandEmpty>
+            <CommandEmpty>Not found.</CommandEmpty>
             <CommandGroup>
-              {frameworks.map((framework) => (
+              {items.map((item) => (
                 <CommandItem
-                  key={framework.value}
-                  value={framework.value}
+                  key={item.value}
+                  value={item.value}
                   onSelect={(currentValue) => {
                     setValue(currentValue === value ? "" : currentValue)
+                    onSelect?.(currentValue)
                     setOpen(false)
                   }}
                 >
-                  {framework.label}
+                  {item.label}
                   <Check
                     className={cn(
                       "ml-auto",
-                      value === framework.value ? "opacity-100" : "opacity-0"
+                      value === item.value ? "opacity-100" : "opacity-0"
                     )}
                   />
                 </CommandItem>
