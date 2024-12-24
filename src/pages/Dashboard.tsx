@@ -1,10 +1,12 @@
 import { ServiceTabs } from "@/components/dashboard/ServiceTabs";
-import { ServiceSection } from "@/components/dashboard/ServiceSection";
-import { SearchBox } from "@/components/SearchBox";
+import { QASearchBox } from "@/components/QASearchBox";
+import { ServiceControls } from "@/components/ServiceControls";
+import { ServiceSections } from "@/components/ServiceSections";
 import { useServices } from "@/hooks/useServices";
 import { initialServices } from "@/data/services";
-import { ServiceGrid } from "@/components/ServiceGrid";
 import { TomcatStatus } from "@/components/TomcatStatus";
+import React, { useState, useCallback } from "react";
+import { useFileProcessor } from "@/hooks/useFileProcessor";
 
 export function Dashboard() {
   const {
@@ -17,47 +19,47 @@ export function Dashboard() {
     toggleEnabled,
   } = useServices(initialServices);
 
+  const [selectedQA, setSelectedQA] = React.useState("");
+  
+  const {
+    currentFile,
+    processStatus,
+    handlePlay: originalHandlePlay,
+    handleStop
+  } = useFileProcessor();
+
+  const handlePlay = useCallback(() => {
+    originalHandlePlay(selectedQA);
+  }, [originalHandlePlay, selectedQA]);
+
   return (
-    <div className="relative min-h-screen pb-5">
+    <div className="relative min-h-screen pb-20">
       <div className="container mx-auto p-4">
-        <div className="flex items-center gap-4 mb-5">
-          <ServiceTabs
-            onValueChange={(value) => setShowFavorites(value === "favorite")}
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-4">
+            <ServiceTabs onValueChange={(value) => setShowFavorites(value === "favorite")} />
+            <QASearchBox value={selectedQA} onChange={setSelectedQA} />
+          </div>
+          
+          <ServiceControls 
+            status={processStatus}
+            onPlay={handlePlay}
+            onStop={handleStop}
+            currentFile={currentFile}
           />
-          <SearchBox value={searchQuery} onChange={setSearchQuery} />
         </div>
 
         <div className="space-y-8">
-          {showFavorites ? (
-            <>
-              {sections.favorites.length > 0 && (
-                <ServiceSection
-                  title="Favorites"
-                  services={sections.favorites}
-                  onFavoriteToggle={toggleFavorite}
-                  onEnableToggle={toggleEnabled}
-                />
-              )}
-              {sections.enabled.length > 0 && (
-                <ServiceSection
-                  title="Enabled Services"
-                  services={sections.enabled}
-                  onFavoriteToggle={toggleFavorite}
-                  onEnableToggle={toggleEnabled}
-                />
-              )}
-            </>
-          ) : (
-            <ServiceGrid
-              services={sections.allServices}
-              onFavoriteToggle={toggleFavorite}
-              onEnableToggle={toggleEnabled}
-            />
-          )}
+          <ServiceSections
+            showFavorites={showFavorites}
+            sections={sections}
+            toggleFavorite={toggleFavorite}
+            toggleEnabled={toggleEnabled}
+          />
         </div>
       </div>
 
-      <footer className="absolute bottom-0 w-full border-t bg-background">
+      <footer className="fixed bottom-0 left-[240px] right-0 border-t bg-background z-10">
         <div className="container mx-auto p-4 flex items-center justify-center">
           <div className="flex space-x-4">
             <TomcatStatus id={1} status="running" />

@@ -1,6 +1,5 @@
 import * as React from "react"
 import { Check, ChevronsUpDown } from "lucide-react"
- 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -17,44 +16,15 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
-
-const frameworks = [
-    {
-      value: "jarvis",
-      label: "jarvis",
-    },
-    {
-      value: "vonthedon",
-      label: "vonthedon",
-    },
-    {
-      value: "theoffice",
-      label: "theoffice",
-    },
-    {
-      value: "munchkin",
-      label: "munchkin",
-    },
-    {
-      value: "arcus",
-      label: "arcus",
-    },
-  ]
-
-interface SearchBoxProps {
+interface BranchSelectorProps {
+  items: Array<{ value: string; label: string }>;
   placeholder?: string;
-  items?: Array<{ value: string; label: string }>;
-  onSelect?: (value: string) => void;
 }
 
-export function SearchBox({ 
-  placeholder = "Select QA Box",
-  items = frameworks,
-  onSelect
-}: SearchBoxProps) {
+export function BranchSelector({ items, placeholder = "Select Branch" }: BranchSelectorProps) {
   const [open, setOpen] = React.useState(false)
   const [value, setValue] = React.useState("")
- 
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -64,9 +34,7 @@ export function SearchBox({
           aria-expanded={open}
           className="w-[200px] justify-between"
         >
-          {value
-            ? items.find((item) => item.value === value)?.label
-            : placeholder}
+          {value ? items.find((item) => item.value === value)?.label : placeholder}
           <ChevronsUpDown className="opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -82,7 +50,6 @@ export function SearchBox({
                   value={item.value}
                   onSelect={(currentValue) => {
                     setValue(currentValue === value ? "" : currentValue)
-                    onSelect?.(currentValue)
                     setOpen(false)
                   }}
                 >
@@ -101,4 +68,4 @@ export function SearchBox({
       </PopoverContent>
     </Popover>
   )
-}
+} 

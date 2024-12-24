@@ -39,7 +39,7 @@ export function ServiceSettings() {
           </div>
           <div className="grid gap-2">
             <div className="grid grid-cols-3 items-center gap-4">
-              <Label htmlFor="tomcat">Tomcat</Label>
+              <Label>Tomcat</Label>
               <Select defaultValue="1">
                 <SelectTrigger className="col-span-2 h-8">
                   <SelectValue placeholder="Select Tomcat" />
@@ -54,7 +54,7 @@ export function ServiceSettings() {
               </Select>
             </div>
             <div className="grid grid-cols-3 items-center gap-4">
-              <Label htmlFor="maxWidth">Java</Label>
+              <Label >Java</Label>
               <Select defaultValue="8">
                 <SelectTrigger className="col-span-2 h-8">
                   <SelectValue placeholder="Select Java Version" />

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import { Service, ServiceSection } from '@/types/service'
 
 interface UseServicesReturn {
@@ -16,7 +16,7 @@ export const useServices = (initialServices: Service[]): UseServicesReturn => {
   const [searchQuery, setSearchQuery] = useState('')
   const [services, setServices] = useState(initialServices)
 
-  const toggleFavorite = useCallback((serviceId: string) => {
+  const toggleFavorite = (serviceId: string) => {
     setServices(prev =>
       prev.map(service =>
         service.serviceId === serviceId
@@ -24,9 +24,9 @@ export const useServices = (initialServices: Service[]): UseServicesReturn => {
           : service
       )
     )
-  }, [])
+  }
 
-  const toggleEnabled = useCallback((serviceId: string) => {
+  const toggleEnabled = (serviceId: string) => {
     setServices(prev =>
       prev.map(service =>
         service.serviceId === serviceId
@@ -34,7 +34,7 @@ export const useServices = (initialServices: Service[]): UseServicesReturn => {
           : service
       )
     )
-  }, [])
+  }
 
   const filteredServices = useMemo(() => {
     if (!searchQuery) return services

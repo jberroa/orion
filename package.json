@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "npm-run-all --parallel dev:react electron",
-    "dev:react": "vite",
+    "dev:react": "vite ",
     "start": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build && electron-builder",
+    "build:dir": "vite build && electron-builder --dir",
+    "build:bullhorn": "vite build --base=/orion/ --mode bullhorn",
     "build-q": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -44,6 +46,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
     "eslint": "^9.15.0",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.14",
@@ -55,5 +58,29 @@
     "typescript-eslint": "^8.15.0",
     "vite": "^6.0.1"
   },
-  "main": "./electron/electron.js"
+  "main": "./electron/electron.js",
+  "build": {
+    "appId": "com.your.app",
+    "productName": "Orion",
+    "mac": {
+      "target": ["dmg", "zip"],
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "dmg": {
+      "sign": false
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/",
+        "to": "resources/"
+      }
+    ]
+  }
 }

@@ -11,17 +11,18 @@ import {
   BreadcrumbList,
   BreadcrumbItem,
   BreadcrumbLink,
-  BreadcrumbSeparator,
-  BreadcrumbPage,
+  BreadcrumbSeparator
 } from "./components/ui/breadcrumb";
 import { Routes, Route } from "react-router-dom";
 import { Dashboard } from "./pages/Dashboard";
 import { Documentation } from "./pages/Documentation";
 import { Configuration } from "./pages/Configuration";
 import { Settings } from "./pages/Settings";
+import { ThemeProvider } from "./components/ThemeProvider";
 
 function App() {
   return (
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
@@ -51,6 +52,7 @@ function App() {
           </main>
         </SidebarInset>
       </SidebarProvider>
+    </ThemeProvider>
   );
 }
 

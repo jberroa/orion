@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 
-import { SearchBox } from "./SearchBox";
+import { BranchSelector } from "./BranchSelector";
 import { ServiceSettings } from "./ServiceSettings";
 
 interface ServiceCardProps {
@@ -37,7 +37,7 @@ export function ServiceCard({
   onEnableToggle,
 }: ServiceCardProps) {
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden min-w-[350px]">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-lg font-medium">{title}</CardTitle>
         <div className="flex items-center space-x-2">
@@ -58,7 +58,7 @@ export function ServiceCard({
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">{description}</p>
         <div className="flex items-center justify-between">
-          <SearchBox items={branches} placeholder="Select Branch" />
+          <BranchSelector items={branches} placeholder="Select Branch" />
           <div className="flex items-center space-x-2">
             <span className="text-sm text-muted-foreground">Enabled</span>
             <Switch

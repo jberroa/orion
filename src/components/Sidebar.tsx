@@ -14,7 +14,7 @@ import {
 } from "lucide-react"
 
 import { Nav } from "@/components/Nav"
-import { NavUser } from "@/components/nav-user"
+import { NavUser } from "@/components/NavUser"
 import {
   Sidebar,
   SidebarContent,
@@ -24,6 +24,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { ModeToggle } from "./ModeToggle"
 
 const data = {
   user: {
@@ -132,6 +133,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <span className="truncate font-semibold">Orion</span>
                   <span className="truncate text-xs">v0.0.1</span>
                 </div>
+                <ModeToggle />
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
