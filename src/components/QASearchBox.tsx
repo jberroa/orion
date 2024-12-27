@@ -33,8 +33,6 @@ export function QASearchBox({ value, onChange }: SearchBoxProps) {
       try {
         setLoading(true)
         // Replace with your actual API endpoint
-        const username = "jorge.berroa@bullhorn.com";
-        const apiToken = "11f5cf6fe431683a56ba2dae8b35aedc12";
         const username = import.meta.env.VITE_USERNAME;
         const apiToken = import.meta.env.VITE_API_TOKEN;
         const url = import.meta.env.VITE_JENKINS_URL;
