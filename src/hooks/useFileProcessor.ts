@@ -4,7 +4,7 @@ interface UseFileProcessorReturn {
   files: string[];
   currentFile?: string;
   processStatus: "running" | "stopped" | "error";
-  handlePlay: (qaBox: string) => Promise<void>;
+  handlePlay: (qaBox: string, services: object) => Promise<void>;
   handleStop: () => void;
   handleNext: () => void;
 }
@@ -14,14 +14,14 @@ export function useFileProcessor(): UseFileProcessorReturn {
   const [currentFileIndex, setCurrentFileIndex] = useState(-1);
   const [processStatus, setProcessStatus] = useState<"running" | "stopped" | "error">("stopped");
 
-  const handlePlay = async (qaBox: string) => {
+  const handlePlay = async (qaBox: string, services:object) => {
     console.log('Processing with QA Box:', qaBox);
     try {
       if (!window.electron) {
         throw new Error('Electron API not available');
       }
       
-      const filesList = await window.electron.invoke('read-folder');
+      const filesList = await window.electron.invoke('read-folder', qaBox, services);
       setFiles(filesList);
       setCurrentFileIndex(0);
       setProcessStatus("running");

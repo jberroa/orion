@@ -33,11 +33,21 @@ export function QASearchBox({ value, onChange }: SearchBoxProps) {
       try {
         setLoading(true)
         // Replace with your actual API endpoint
-        const response = await fetch('/api/boxes')
+        const username = "jorge.berroa@bullhorn.com";
+        const apiToken = "11f5cf6fe431683a56ba2dae8b35aedc12";
+        const username = import.meta.env.VITE_USERNAME;
+        const apiToken = import.meta.env.VITE_API_TOKEN;
+        const url = import.meta.env.VITE_JENKINS_URL;
+
+        console.log("about to fetch")
+        const response = await window.electron.invoke('fetch-data',{url,username, apiToken});
+        console.log("finished fetch")
+
         if (!response.ok) throw new Error('Failed to fetch boxes')
-        const data = await response.json()
-        setBoxes(data)
+
+        setBoxes(response.data);
       } catch (err) {
+        console.log(err)
         setError(err instanceof Error ? err.message : 'Failed to load boxes')
       } finally {
         setLoading(false)
@@ -46,7 +56,7 @@ export function QASearchBox({ value, onChange }: SearchBoxProps) {
 
     fetchBoxes()
   }, [])
- 
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>

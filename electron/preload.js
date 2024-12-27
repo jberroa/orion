@@ -9,7 +9,7 @@ contextBridge.exposeInMainWorld(
         // We can expose functions, values, or objects
         invoke: function(channel, ...args) {
             console.log('Invoke called with channel:', channel);
-            const validChannels = ['read-folder'];
+            const validChannels = ['read-folder','fetch-data'];
             if (validChannels.includes(channel)) {
                 return ipcRenderer.invoke(channel, ...args);
             }

@@ -5,15 +5,13 @@ import { ServiceSections } from "@/components/ServiceSections";
 import { useServices } from "@/hooks/useServices";
 import { initialServices } from "@/data/services";
 import { TomcatStatus } from "@/components/TomcatStatus";
-import React, { useState, useCallback } from "react";
+import React, { useCallback } from "react";
 import { useFileProcessor } from "@/hooks/useFileProcessor";
 
 export function Dashboard() {
   const {
     showFavorites,
-    searchQuery,
     setShowFavorites,
-    setSearchQuery,
     sections,
     toggleFavorite,
     toggleEnabled,
@@ -29,7 +27,7 @@ export function Dashboard() {
   } = useFileProcessor();
 
   const handlePlay = useCallback(() => {
-    originalHandlePlay(selectedQA);
+    originalHandlePlay(selectedQA, sections.enabled);
   }, [originalHandlePlay, selectedQA]);
 
   return (
@@ -40,7 +38,6 @@ export function Dashboard() {
             <ServiceTabs onValueChange={(value) => setShowFavorites(value === "favorite")} />
             <QASearchBox value={selectedQA} onChange={setSelectedQA} />
           </div>
-          
           <ServiceControls 
             status={processStatus}
             onPlay={handlePlay}
