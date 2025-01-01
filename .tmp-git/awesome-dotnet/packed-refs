@@ -1,0 +1,8 @@
+# pack-refs with: peeled fully-peeled sorted 
+125089ba5694be7ec3d9d95a4ae6bc0a86c47f88 refs/heads/Update-awesome_bot-to-allow-dupes
+33dcb94ce369343f45558cf5d38b2674204f1bae refs/heads/master
+5b3172497ffd21791afe77d3a79bda47608e6e8f refs/heads/netcore
+cdb42dd2160ba3fc9ac13aff8fa110770a5f696a refs/heads/p-lang
+470424225d734e683d80636742227af28d07e52b refs/heads/pleb-patch-1
+96804ad618a8c28a2993431e3f0377e878324aac refs/heads/pleb-patch-2
+5472e10e87cf21b1d33d4a0611618a47d5de8d68 refs/heads/revert-1169-add-topaz

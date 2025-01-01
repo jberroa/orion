@@ -4,22 +4,22 @@ import { ServiceGrid } from '@/components/ServiceGrid'
 interface ServiceSectionProps {
   title: string
   services: Service[]
-  onFavoriteToggle: (serviceId: string) => void
-  onEnableToggle: (serviceId: string) => void
+  toggleFavorite: (title: string) => void
+  toggleEnabled: (title: string) => void
 }
 
 export const ServiceSection = ({ 
   title, 
-  services, 
-  onFavoriteToggle, 
-  onEnableToggle 
+  services = [],
+  toggleFavorite, 
+  toggleEnabled 
 }: ServiceSectionProps) => (
   <section>
     <h2 className="text-lg font-semibold mb-4">{title}</h2>
     <ServiceGrid 
       services={services}
-      onFavoriteToggle={onFavoriteToggle}
-      onEnableToggle={onEnableToggle}
+      onFavoriteToggle={toggleFavorite}
+      onEnableToggle={toggleEnabled}
     />
   </section>
 ) 

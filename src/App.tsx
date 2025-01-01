@@ -19,40 +19,43 @@ import { Documentation } from "./pages/Documentation";
 import { Configuration } from "./pages/Configuration";
 import { Settings } from "./pages/Settings";
 import { ThemeProvider } from "./components/ThemeProvider";
+import { ServicesProvider } from '@/contexts/ServicesContext';
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2">
-            <div className="flex items-center gap-2 px-4">
-              <SidebarTrigger className="-ml-1" />
-              <Separator orientation="vertical" className="mr-2 h-4" />
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink href="/">
-                      Dashboard
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="hidden md:block" />
-                </BreadcrumbList>
-              </Breadcrumb>
-            </div>
-          </header>
-          <main className="p-6 pb-10">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/docs" element={<Documentation />} />
-              <Route path="/config" element={<Configuration />} />
-              <Route path="/settings" element={<Settings />} />
-            </Routes>
-          </main>
-        </SidebarInset>
-      </SidebarProvider>
-    </ThemeProvider>
+    <ServicesProvider>
+      <ThemeProvider>
+        <SidebarProvider>
+          <AppSidebar />
+          <SidebarInset>
+            <header className="flex h-16 shrink-0 items-center gap-2">
+              <div className="flex items-center gap-2 px-4">
+                <SidebarTrigger className="-ml-1" />
+                <Separator orientation="vertical" className="mr-2 h-4" />
+                <Breadcrumb>
+                  <BreadcrumbList>
+                    <BreadcrumbItem className="hidden md:block">
+                      <BreadcrumbLink href="/">
+                        Dashboard
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator className="hidden md:block" />
+                  </BreadcrumbList>
+                </Breadcrumb>
+              </div>
+            </header>
+            <main className="p-6 pb-10">
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/docs" element={<Documentation />} />
+                <Route path="/config" element={<Configuration />} />
+                <Route path="/settings" element={<Settings />} />
+              </Routes>
+            </main>
+          </SidebarInset>
+        </SidebarProvider>
+      </ThemeProvider>
+    </ServicesProvider>
   );
 }
 

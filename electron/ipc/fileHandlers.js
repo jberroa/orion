@@ -6,15 +6,101 @@ import fsExtra from 'fs-extra';
 import {config} from '../../src/data/config.js'
 import { getMachineConfig } from '../../src/data/config.js'
 import { tokenReplacements } from "../../resources/tokens/tokenReplacements.js";
+import { dialog } from 'electron';
 
 // Recreate __dirname
 
+export const ensureSettingsFile = async () => {
+  try {
+    const userDataPath = app.getPath("userData");
+    const configPath = path.join(userDataPath, "settings.json");
+    
+    if (!fs.existsSync(configPath)) {
+      console.log("Creating initial settings file...");
+      const defaultSettings = {
+        repoPath: "",
+        maxLogLength: 1000,
+        masterUsername: "",
+        masterPassword: "",
+        instanceUsername: "",
+        instancePassword: "",
+        selectedQABox: "",
+        theme: "system",
+        services: {
+          favorites: [],    // Array of service IDs that are favorited
+          enabled: []       // Array of service IDs that are enabled
+        }
+      };
+      
+      await fs.promises.mkdir(userDataPath, { recursive: true });
+      await fs.promises.writeFile(configPath, JSON.stringify(defaultSettings, null, 2));
+      console.log("Initial settings file created");
+      return defaultSettings;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error("Error ensuring settings file:", error);
+    throw error;
+  }
+};
 
+const getSettings = async () => {
+  try {
+    const defaultSettings = await ensureSettingsFile();
+    if (defaultSettings) {
+      return defaultSettings;
+    }
 
+    const userDataPath = app.getPath("userData");
+    const configPath = path.join(userDataPath, "settings.json");
+    const settings = JSON.parse(await fs.promises.readFile(configPath, 'utf8'));
+    
+    return {
+      ...settings,
+      services: settings.services || { favorites: [], enabled: [] },
+      repoPath: settings.repoPath || "",
+      maxLogLength: settings.maxLogLength || 1000,
+      masterUsername: settings.masterUsername || "",
+      masterPassword: settings.masterPassword || "",
+      instanceUsername: settings.instanceUsername || "",
+      instancePassword: settings.instancePassword || "",
+      selectedQABox: settings.selectedQABox || "",
+      theme: settings.theme || "system",
+    };
+  } catch (error) {
+    console.error("Error reading settings:", error);
+    return {
+      repoPath: "",
+      maxLogLength: 1000,
+      masterUsername: "",
+      masterPassword: "",
+      instanceUsername: "",
+      instancePassword: "",
+      selectedQABox: "",
+      services: { favorites: [], enabled: [] }
+    };
+  }
+};
+
+const saveSettings = async (settings) => {
+  try {
+    const userDataPath = app.getPath("userData");
+    const configPath = path.join(userDataPath, "settings.json");
+    await fs.promises.writeFile(configPath, JSON.stringify(settings, null, 2));
+    return true;
+  } catch (error) {
+    console.error("Error saving settings:", error);
+    return false;
+  }
+};
 
 export const setupFileHandlers = (ipcMain) => {
-  ipcMain.handle("read-folder", async (qaBox, services) => {
-    console.log("read-folder handler called");
+  ipcMain.handle("create-properties-files", async (_, services) => {
+    console.log("create-properties-files handler called");
+    const settings = await getSettings();
+    const qaBox = settings.selectedQABox;
+    
     const resourcePath = path.join(
       app.isPackaged ? process.resourcesPath : process.cwd(),
       "resources",
@@ -61,7 +147,7 @@ export const setupFileHandlers = (ipcMain) => {
       console.log("Files found:", filesw);
       return filesw;
     } catch (error) {
-      console.error("Error reading folder:", error);
+      console.error("Error creating properties files:", error);
       if (error.code === "ENOENT") {
         try {
           await fs.promises.mkdir(resourcePath, { recursive: true });
@@ -81,5 +167,46 @@ export const setupFileHandlers = (ipcMain) => {
     await fs.promises.writeFile(filePath, content);
     return true;
   });
-};
 
+  ipcMain.handle("select-directory", async () => {
+    console.log("select-directory handler called");
+    try {
+      const result = await dialog.showOpenDialog({
+        properties: ['openDirectory']
+      });
+      
+      console.log("Dialog result:", result);
+      if (!result.canceled) {
+        return result.filePaths[0];
+      }
+      return null;
+    } catch (error) {
+      console.error("Error in select-directory:", error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle("get-settings", async () => {
+    return await getSettings();
+  });
+
+  ipcMain.handle("save-settings", async (_, settings) => {
+    return await saveSettings(settings);
+  });
+
+  ipcMain.on('get-settings-sync', (event) => {
+    try {
+      const userDataPath = app.getPath("userData");
+      const configPath = path.join(userDataPath, "settings.json");
+      if (fs.existsSync(configPath)) {
+        const settings = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        event.returnValue = settings;
+      } else {
+        event.returnValue = { theme: 'system' };
+      }
+    } catch (error) {
+      console.error('Error reading settings:', error);
+      event.returnValue = { theme: 'system' };
+    }
+  });
+};

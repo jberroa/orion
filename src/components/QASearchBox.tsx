@@ -32,18 +32,22 @@ export function QASearchBox({ value, onChange }: SearchBoxProps) {
     const fetchBoxes = async () => {
       try {
         setLoading(true)
-        // Replace with your actual API endpoint
-        const username = import.meta.env.VITE_USERNAME;
-        const apiToken = import.meta.env.VITE_API_TOKEN;
-        const url = import.meta.env.VITE_JENKINS_URL;
+        
+        const settings = await window.electron.invoke("get-settings");
+        
+        // Only attempt to fetch if Jenkins credentials exist
+        if (settings.jenkinsUsername && settings.jenkinsApiToken) {
+          const url = import.meta.env.VITE_JENKINS_URL;
+          
+          const response = await window.electron.invoke('fetch-data', {
+            url,
+            username: settings.jenkinsUsername,
+            apiToken: settings.jenkinsApiToken
+          });
 
-        console.log("about to fetch")
-        const response = await window.electron.invoke('fetch-data',{url,username, apiToken});
-        console.log("finished fetch")
-
-        if (!response.ok) throw new Error('Failed to fetch boxes')
-
-        setBoxes(response.data);
+          if (!response.ok) throw new Error('Failed to fetch boxes')
+          setBoxes(response.data);
+        }
       } catch (err) {
         console.log(err)
         setError(err instanceof Error ? err.message : 'Failed to load boxes')

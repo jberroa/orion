@@ -3,25 +3,67 @@ import type { Service, ServiceCategory } from '@/types/service'
 const createService = (
   title: string,
   category: ServiceCategory,
-  serviceId: string,
-  enabled = false,
-  favorite = false
+  config: Partial<{
+    gitUrl: string,
+    folder: string,
+    tomcatNumber: number,
+    buildParams: Record<string, string>,
+    parentRepo: string,
+    tokenName: string,
+    webPath: string,
+    warPath: string
+  }> = {}
 ): Service => ({
   title,
   category,
-  serviceId,
-  enabled,
-  favorite,
+  branch: 'local',
+  enabled: false,
+  favorite: false,
   description: "An AI powered developer platform that allows developer to create, store and manage.",
   lastUpdated: new Date(),
-  tags: [category]
+  tags: [category],
+  // New properties with defaults
+  gitUrl: config.gitUrl || "",
+  folder: config.folder || "",
+  tomcatNumber: config.tomcatNumber || 0,
+  buildParams: config.buildParams || {},
+  parentRepo: config.parentRepo || "",
+  tokenName: config.tokenName || "",
+  webPath: config.webPath || "",
+  warPath: config.warPath || "",
+  id: '',
+  name: '',
+  path: '',
+  port: 0,
+  javaVersion: '8'
 })
 
 export const initialServices: Service[] = [
-  createService("Core Services", "core", "f/BH-10125-auth-fix", true, true),
-  createService("Novo Integration", "integration", "f/BH-85475-candida", true),
-  createService("Event Worker", "worker", "f/BH-67890-event-worker", false, true),
-  createService("Data Sync", "data", "f/BH-54321-data-sync"),
-  createService("Canvas Services", "core", "f/BH-12345-test"),
-  createService("DataHub", "data", "f/BH-95856-dashboa", false, true),
+  createService("Core Services", "core", {
+    gitUrl: "https://github.com/quozd/awesome-dotnet.git",
+    folder: "core-services",
+    tomcatNumber: 8080,
+    buildParams: {
+      "JAVA_VERSION": "11",
+      "MAVEN_OPTS": "-Xmx2g"
+    },
+    parentRepo: "main-repo",
+    tokenName: "CORE_TOKEN",
+    webPath: "/core",
+    warPath: "/target/core.war"
+  }),
+  createService("Novo Integration", "integration", {
+    gitUrl: "https://github.com/quozd/awesome-dotnet.git",
+    folder: "novo-int",
+    tomcatNumber: 8081,
+    parentRepo: "integration-repo",
+    tokenName: "NOVO_TOKEN",
+    webPath: "/novo",
+    warPath: "/target/novo.war"
+  }),
+  // Add configuration for other services...
+  createService("Event Worker", "worker"),
+  createService("Data Sync", "data"),
+  createService("Canvas Services", "core"),
+  createService("DataHub", "data"),
 ]

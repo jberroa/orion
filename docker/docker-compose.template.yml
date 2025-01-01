@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  ${SERVICE_ID}:
+    image: ${BASE_IMAGE}
+    volumes:
+      - ${WAR_FILE}:/usr/local/tomcat/webapps/
+    ports:
+      - "${PORT}:8080"
+    environment:
+      - JAVA_OPTS=-Xmx512m -Xms256m
+    networks:
+      - ${SERVICE_ID}-network
+
+networks:
+  ${SERVICE_ID}-network:
+    driver: bridge 

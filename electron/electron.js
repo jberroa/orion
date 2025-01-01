@@ -3,23 +3,22 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
 import { setupIpcHandlers } from './ipc/index.js';
+import { ensureSettingsFile } from './ipc/fileHandlers.js';
 
 // Define __dirname for ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 let mainWindow = null;
-
+let isQuitting = false;
+console.log('Settings file location:', path.join(app.getPath('userData'), 'settings.json'));
 // Add this function to properly clean up
 function cleanup() {
-  if (mainWindow) {
-    mainWindow.destroy();
-    mainWindow = null;
-  }
-  // Force quit the app
-  app.quit();
-  // If that doesn't work, force exit the process
-  process.exit(0);
+  if (isQuitting) return;
+  isQuitting = true;
+
+  mainWindow = null;
+  app.quit();  
 }
 
 function createWindow() {
@@ -71,7 +70,9 @@ function createWindow() {
 
   mainWindow.on('closed', () => {
     console.log('Main window closed.');
-    cleanup();
+    mainWindow = null;
+    app.quit();
+    //cleanup();  // Call cleanup when window is closed
   });
 
   // Add error handling
@@ -82,36 +83,37 @@ function createWindow() {
 }
 
 // Wait for app to be ready before creating window
-app.whenReady().then(() => {
-  console.log('Electron is ready.');
-  setupIpcHandlers(ipcMain);
-  createWindow();
+app.whenReady().then(async () => {
+  try {
+    // Ensure settings file exists before creating window
+    await ensureSettingsFile();
+    
+    console.log('Electron is ready.');
+    setupIpcHandlers(ipcMain);
+    createWindow();
 
-  app.on('activate', () => {
-    console.log('App activated.');
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
+    app.on('activate', () => {
+      console.log('App activated.');
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow();
+      }
+    });
+  } catch (error) {
+    console.error("Error during app startup:", error);
+    app.quit();
+  }
 });
 
+// Modify window-all-closed event to always quit
 app.on('window-all-closed', () => {
   console.log('All windows closed.');
-  cleanup();
+  if (process.platform !== 'darwin') {  // If not macOS
+    app.quit();
+  }
 });
 
 // Add this to ensure proper cleanup
 app.on('before-quit', () => {
   console.log('App is quitting...');
-  cleanup();
-});
-
-process.on('SIGTERM', () => {
-  console.log('Received SIGTERM...');
-  cleanup();
-});
-
-process.on('SIGINT', () => {
-  console.log('Received SIGINT...');
-  cleanup();
+  app.quit();
 });
