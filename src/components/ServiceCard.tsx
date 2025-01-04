@@ -10,9 +10,10 @@ import { Badge } from "@/components/ui/badge";
 
 import { BranchSelector } from "./BranchSelector";
 import { ServiceSettings } from "./ServiceSettings";
+import { useServices } from "@/hooks/useServices";
 
 interface ServiceCardProps {
-  title: string;
+  name: string;
   description: string;
   serviceId: string;
   enabled?: boolean;
@@ -26,22 +27,31 @@ interface ServiceCardProps {
 }
 
 export function ServiceCard({
-  title,
+  name,
   description,
+  serviceId,
   enabled = false,
   favorite = false,
   parentRepo,
   gitUrl,
   branch,
   onBranchChange,
-  onFavoriteToggle,
-  onEnableToggle,
 }: ServiceCardProps) {
+  const { toggleServiceEnabled, toggleServiceFavorite } = useServices();
+
+  const handleEnableToggle = () => {
+    toggleServiceEnabled(serviceId);
+  };
+
+  const handleFavoriteToggle = () => {
+    toggleServiceFavorite(serviceId);
+  };
+
   return (
     <Card className="overflow-hidden min-w-[350px]">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex flex-col gap-2">
-          <CardTitle className="text-lg font-medium">{title}</CardTitle>
+          <CardTitle className="text-lg font-medium">{name}</CardTitle>
           {parentRepo && (
             <Badge variant="secondary" className="w-fit">
               {parentRepo}
@@ -53,7 +63,7 @@ export function ServiceCard({
             variant="ghost"
             size="icon"
             className="text-muted-foreground hover:text-primary"
-            onClick={onFavoriteToggle}
+            onClick={handleFavoriteToggle}
           >
             <Heart
               className={cn("h-4 w-4", favorite && "fill-current text-primary")}
@@ -75,9 +85,9 @@ export function ServiceCard({
           <div className="flex items-center space-x-2">
             <span className="text-sm text-muted-foreground">Enabled</span>
             <Switch
-              id={`${title}-enabled`}
+              id={`service-${serviceId}`}
               checked={enabled}
-              onCheckedChange={onEnableToggle}
+              onCheckedChange={handleEnableToggle}
             />
           </div>
         </div>

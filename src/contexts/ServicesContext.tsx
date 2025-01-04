@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Service } from '@/types/service';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import type { Service } from '@/types/service';
 import { initialServices } from '@/data/services';
-import { useServiceActions } from '@/hooks/useServiceActions';
 
 interface ServicesContextType {
+  services: Service[];
   showFavorites: boolean;
   setShowFavorites: (show: boolean) => void;
   sections: {
@@ -13,122 +13,145 @@ interface ServicesContextType {
   };
   toggleFavorite: (serviceId: string) => void;
   toggleEnabled: (serviceId: string) => void;
+  toggleServiceEnabled: (serviceId: string) => void;
+  toggleServiceFavorite: (serviceId: string) => void;
+  updateServiceBranch: (serviceId: string, branch: string) => void;
+  selectedQABox: string;
+  setSelectedQABox: (qa: string) => void;
 }
 
-const ServicesContext = createContext<ServicesContextType | undefined>(undefined);
+export const ServicesContext = createContext<ServicesContextType | undefined>(undefined);
 
 export function ServicesProvider({ children }: { children: React.ReactNode }) {
-  const [showFavorites, setShowFavorites] = useState(() => {
-    try {
-      const saved = localStorage.getItem('showFavorites');
-      return saved ? JSON.parse(saved) : false;
-    } catch (error) {
-      console.error('Error reading showFavorites from localStorage:', error);
-      return false;
-    }
-  });
+  const [services, setServices] = useState<Service[]>(initialServices);
+  const [enabledIds, setEnabledIds] = useState<string[]>([]);
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [showFavorites, setShowFavorites] = useState(false);
+  const [selectedQABox, setSelectedQABox] = useState("");
 
-  const [sections, setSections] = useState({
-    allServices: initialServices.map(service => ({
-      ...service,
-      favorite: false,
-      enabled: false
-    })),
-    favorites: [] as Service[],
-    enabled: [] as Service[]
-  });
-
-  const { toggleFavorite, toggleEnabled } = useServiceActions({ sections, setSections });
-
-  // Load saved service preferences
+  // Load settings on mount
   useEffect(() => {
-    console.log('Loading saved service preferences...');
-    window.electron.invoke("get-settings").then((settings) => {
-      console.log('Loaded settings:', settings);
-      if (settings.services) {
-        const favoritesTitles = settings.services.favorites || [];
-        const enabledTitles = settings.services.enabled || [];
-
-        // Update allServices with the correct favorite and enabled states
-        const updatedAllServices = initialServices.map(service => ({
-          ...service,
-          favorite: favoritesTitles.includes(service.title),
-          enabled: enabledTitles.includes(service.title)
-        }));
-
-        // Create favorites and enabled arrays based on the updated allServices
-        const updatedFavorites = updatedAllServices.filter(service => 
-          favoritesTitles.includes(service.title)
-        );
-        const updatedEnabled = updatedAllServices.filter(service => 
-          enabledTitles.includes(service.title)
-        );
-
-        setSections({
-          allServices: updatedAllServices,
-          favorites: updatedFavorites,
-          enabled: updatedEnabled
-        });
+    const loadSettings = async () => {
+      const settings = await window.electron.invoke('get-settings');
+      if (settings.selectedQABox) {
+        setSelectedQABox(settings.selectedQABox);
       }
-    }).catch(error => {
-      console.error('Error loading settings:', error);
-    });
-  }, []);
-
-  // Save service preferences whenever they change
-  useEffect(() => {
-    const saveServicePreferences = async () => {
-      console.log('Saving service preferences...');
-      try {
-        const settings = await window.electron.invoke("get-settings");
-        settings.services = {
-          favorites: sections.favorites.map(s => s.title),
-          enabled: sections.enabled.map(s => s.title)
-        };
-        console.log('Saving settings:', settings);
-        await window.electron.invoke("save-settings", settings);
-        console.log('Settings saved successfully');
-      } catch (error) {
-        console.error('Error saving settings:', error);
+      if (settings.enabledServices) {
+        setEnabledIds(settings.enabledServices);
+        // Update services enabled state
+        setServices(prevServices =>
+          prevServices.map(service => ({
+            ...service,
+            enabled: settings.enabledServices.includes(service.id)
+          }))
+        );
+      }
+      if (settings.favoriteServices) {
+        setFavoriteIds(settings.favoriteServices);
+        // Update services favorite state
+        setServices(prevServices =>
+          prevServices.map(service => ({
+            ...service,
+            favorite: settings.favoriteServices.includes(service.id)
+          }))
+        );
       }
     };
-
-    saveServicePreferences();
-  }, [sections.favorites, sections.enabled]);
-
-  // Update localStorage whenever showFavorites changes
-  useEffect(() => {
-    try {
-      localStorage.setItem('showFavorites', JSON.stringify(showFavorites));
-      console.log('Saved showFavorites state:', showFavorites);
-    } catch (error) {
-      console.error('Error saving showFavorites to localStorage:', error);
-    }
-  }, [showFavorites]);
-
-  // Create a memoized setShowFavorites to ensure consistent behavior
-  const handleSetShowFavorites = React.useCallback((value: boolean) => {
-    console.log('Setting showFavorites to:', value);
-    setShowFavorites(value);
+    loadSettings();
   }, []);
 
+  // Save settings when they change
+  useEffect(() => {
+    const saveSettings = async () => {
+      const settings = await window.electron.invoke('get-settings');
+      await window.electron.invoke('save-settings', {
+        ...settings,
+        selectedQABox,
+        enabledServices: enabledIds,
+        favoriteServices: favoriteIds
+      });
+    };
+    saveSettings();
+  }, [enabledIds, favoriteIds, selectedQABox]);
+
+  // Compute sections from IDs
+  const sections = {
+    allServices: services,
+    favorites: services.filter(service => favoriteIds.includes(service.id)),
+    enabled: services.filter(service => enabledIds.includes(service.id))
+  };
+
+  const toggleEnabled = (serviceId: string) => {
+    // Update enabledIds
+    setEnabledIds(prev => 
+      prev.includes(serviceId) 
+        ? prev.filter(id => id !== serviceId)
+        : [...prev, serviceId]
+    );
+    
+    // Update services state
+    setServices(prevServices =>
+      prevServices.map(service =>
+        service.id === serviceId
+          ? { ...service, enabled: !service.enabled }
+          : service
+      )
+    );
+  };
+
+  const toggleFavorite = (serviceId: string) => {
+    // Update favoriteIds
+    setFavoriteIds(prev => 
+      prev.includes(serviceId)
+        ? prev.filter(id => id !== serviceId)
+        : [...prev, serviceId]
+    );
+    
+    // Update services state
+    setServices(prevServices =>
+      prevServices.map(service =>
+        service.id === serviceId
+          ? { ...service, favorite: !service.favorite }
+          : service
+      )
+    );
+  };
+
+  const updateServiceBranch = (serviceId: string, branch: string) => {
+    setServices(prevServices =>
+      prevServices.map(service =>
+        service.id === serviceId
+          ? { ...service, branch }
+          : service
+      )
+    );
+  };
+
   return (
-    <ServicesContext.Provider value={{
-      showFavorites,
-      setShowFavorites: handleSetShowFavorites,
-      sections,
-      toggleFavorite,
-      toggleEnabled
-    }}>
+    <ServicesContext.Provider
+      value={{
+        services,
+        showFavorites,
+        setShowFavorites,
+        sections,
+        toggleFavorite,
+        toggleEnabled,
+        toggleServiceEnabled: toggleEnabled,
+        toggleServiceFavorite: toggleFavorite,
+        updateServiceBranch,
+        selectedQABox,
+        setSelectedQABox,
+      }}
+    >
       {children}
     </ServicesContext.Provider>
   );
 }
 
-export function useServicesContext() {
+export function useServices() {
   const context = useContext(ServicesContext);
   if (context === undefined) {
-    throw new Error('useServicesContext must be used within a ServicesProvider');
+    throw new Error('useServices must be used within a ServicesProvider');
   }
   return context;
 } 

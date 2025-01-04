@@ -3,7 +3,7 @@ import { QASearchBox } from "@/components/QASearchBox";
 import { ServiceControls } from "@/components/ServiceControls";
 import { ServiceSections } from "@/components/ServiceSections";
 import { TomcatStatus } from "@/components/TomcatStatus";
-import { useServicesContext } from '@/contexts/ServicesContext';
+import { useServices } from '@/contexts/ServicesContext';
 import { useFileProcessor } from "@/hooks/useFileProcessor";
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { BuildProgressSheet, type Step } from "@/components/BuildProgressSheet";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function Dashboard() {
   const {
@@ -18,11 +19,11 @@ export function Dashboard() {
     setShowFavorites,
     sections,
     toggleFavorite,
-    toggleEnabled
-  } = useServicesContext();
+    toggleEnabled,
+    selectedQABox,
+    setSelectedQABox
+  } = useServices();
 
-  const [selectedQA, setSelectedQA] = React.useState("");
-  
   const {
     currentFile,
     processStatus,
@@ -67,20 +68,15 @@ export function Dashboard() {
     const loadSettings = async () => {
       const settings = await window.electron.invoke('get-settings');
       if (settings.selectedQABox) {
-        setSelectedQA(settings.selectedQABox);
+        setSelectedQABox(settings.selectedQABox);
       }
     };
     loadSettings();
   }, []);
 
   // Save QA box selection when it changes
-  const handleQABoxChange = async (value: string) => {
-    setSelectedQA(value);
-    const settings = await window.electron.invoke('get-settings');
-    await window.electron.invoke('save-settings', {
-      ...settings,
-      selectedQABox: value
-    });
+  const handleQABoxChange = (value: string) => {
+    setSelectedQABox(value);
   };
 
   const updateContainerStatuses = useCallback(async () => {
@@ -219,7 +215,7 @@ export function Dashboard() {
       await setStepStatus('docker', 'in-progress');
       try {
         addStepLog('docker', 'Starting Docker containers...');
-        await originalHandlePlay(selectedQA, sections.enabled);
+        await originalHandlePlay(selectedQABox, sections.enabled);
         await updateContainerStatuses();
         addStepLog('docker', 'Successfully started Docker containers');
         await setStepStatus('docker', 'completed');
@@ -313,6 +309,9 @@ export function Dashboard() {
     console.log('Build Sheet Open:', buildSheetOpen);
   }, [processStatus, buildSheetOpen]);
 
+  // Add this helper function
+  const isPlayDisabled = !selectedQABox;
+
   return (
     <div className="relative min-h-screen pb-20">
       <div className="container mx-auto p-4">
@@ -323,16 +322,28 @@ export function Dashboard() {
               onValueChange={(value) => setShowFavorites(value === "favorite")}
             />
             <QASearchBox 
-              value={selectedQA} 
+              value={selectedQABox} 
               onChange={handleQABoxChange}
             />
           </div>
-          <ServiceControls 
-            status={processStatus}
-            onPlay={handlePlay}
-            onStop={handleStop}
-            currentFile={currentFile}
-          />
+          <Tooltip>
+            <TooltipTrigger>
+              <div> {/* Wrapper div needed for tooltip to work with disabled button */}
+                <ServiceControls 
+                  status={processStatus}
+                  onPlay={handlePlay}
+                  onStop={handleStop}
+                  currentFile={currentFile}
+                  disabled={isPlayDisabled}
+                />
+              </div>
+            </TooltipTrigger>
+            {isPlayDisabled && (
+              <TooltipContent>
+                <p>QA box must be selected to start services</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
         </div>
 
         <div className="space-y-8">

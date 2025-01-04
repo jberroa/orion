@@ -1,20 +1,21 @@
 import { Play, Square } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { StatusIndicator } from "./StatusIndicator"
-import { useState } from "react"
 
 interface ServiceControlsProps {
   onPlay?: () => void
   onStop?: () => void
   status?: "running" | "stopped" | "error"
   currentFile?: string
+  disabled?: boolean
 }
 
 export function ServiceControls({ 
   onPlay, 
   onStop, 
   status = "stopped",
-  currentFile
+  currentFile,
+  disabled
 }: ServiceControlsProps) {
   return (
     <div className="flex items-center gap-4">
@@ -23,6 +24,7 @@ export function ServiceControls({
         size="icon" 
         className="h-8 w-8" 
         onClick={onPlay}
+        disabled={disabled || status === 'running'}
       >
         <Play className="h-4 w-4" />
       </Button>
@@ -31,6 +33,7 @@ export function ServiceControls({
         size="icon" 
         className="h-8 w-8" 
         onClick={onStop}
+        disabled={disabled || status !== 'running'}
       >
         <Square className="h-4 w-4" />
       </Button>

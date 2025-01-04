@@ -9,8 +9,8 @@ interface ServiceSectionsProps {
     enabled: Service[]
     allServices: Service[]
   }
-  toggleFavorite: (title: string) => void
-  toggleEnabled: (title: string) => void
+  toggleFavorite: (serviceId: string) => void
+  toggleEnabled: (serviceId: string) => void
   onBranchChange: (serviceId: string, branch: string) => void
 }
 
@@ -24,7 +24,7 @@ export function ServiceSections({
   if (showFavorites) {
     // Get enabled services that are not favorites
     const enabledNotFavorites = sections?.enabled?.filter(
-      service => !sections.favorites.some(fav => fav.title === service.title)
+      service => !sections.favorites.some(fav => fav.id === service.id)
     );
 
     if ((sections?.favorites?.length === 0) && (enabledNotFavorites?.length === 0)) {
@@ -56,8 +56,6 @@ export function ServiceSections({
   return sections?.allServices?.length ? (
     <ServiceGrid
       services={sections.allServices}
-      onFavoriteToggle={toggleFavorite}
-      onEnableToggle={toggleEnabled}
       onBranchChange={onBranchChange}
     />
   ) : (
