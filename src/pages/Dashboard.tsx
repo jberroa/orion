@@ -167,10 +167,14 @@ export function Dashboard() {
       await setStepStatus('local', 'in-progress');
       try {
         addStepLog('local', 'Starting local services build...');
-        await window.electron.invoke('build-local-services', sections.enabled);
-        addStepLog('local', 'Successfully built local services');
-        await setStepStatus('local', 'completed');
-        await delay(500);
+        window.electron.on('build-log', (data: { stepId: string, log: string }) => {
+          addStepLog(data.stepId, data.log);
+        });
+        
+        const result = await window.electron.invoke('build-local-services', sections.enabled);
+        if (result.success) {
+          await setStepStatus('local', 'completed');
+        }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
         addStepLog('local', `Error building local services: ${errorMessage}`);

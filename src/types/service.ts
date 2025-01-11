@@ -7,7 +7,6 @@ export interface Service {
   tokenName: string;
   webPath: string;
   warPath: string;
-  additionalBuildParams: string;
   path: string;
   port: number;
   branch: string;
@@ -17,6 +16,8 @@ export interface Service {
   description: string;
   buildParams: string;
   parentRepo: string;
+  parentFolder: string;
+  subRepo: boolean;
 }
 
 export interface ServiceSection {

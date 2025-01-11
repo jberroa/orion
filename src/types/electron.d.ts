@@ -26,6 +26,7 @@ declare global {
       invoke(channel: 'download-remote-services', enabled: Service[]): Promise<void>;
       invoke(channel: 'copy-war-files', enabled: Service[]): Promise<void>;
       invoke(channel: 'create-properties-files', services: Service[]): Promise<string[]>;
+      on: (channel: string, callback: (data: any) => void) => void;
     };
   }
 }

@@ -1,0 +1,62 @@
+<settings>
+  <profiles>
+    <profile>
+      <id>bullhorn-profile</id>
+      <repositories>
+        <repository>
+          <id>bullhorn-releases</id>
+          <name>Bullhorn Releases</name>
+          <url>http://artifactory.bullhorn.com/bh-releases</url>
+          <releases>
+            <enabled>true</enabled>
+            <updatePolicy>always</updatePolicy>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+            <updatePolicy>always</updatePolicy>
+          </snapshots>
+        </repository>
+        <repository>
+          <id>central</id>
+          <url>https://repo.maven.apache.org/maven2</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+        </repository>
+      </repositories>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>bullhorn-releases</id>
+          <name>Bullhorn Releases</name>
+          <url>http://artifactory.bullhorn.com/bh-releases</url>
+          <releases>
+            <enabled>true</enabled>
+            <updatePolicy>always</updatePolicy>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+            <updatePolicy>always</updatePolicy>
+          </snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
+  </profiles>
+
+  <activeProfiles>
+    <activeProfile>bullhorn-profile</activeProfile>
+  </activeProfiles>
+
+  <!-- Completely disable the HTTP blocker -->
+  <mirrors>
+    <mirror>
+      <id>maven-default-http-blocker</id>
+      <mirrorOf>none</mirrorOf>
+      <name>Disable HTTP blocking</name>
+      <url>http://0.0.0.0/</url>
+      <blocked>false</blocked>
+    </mirror>
+  </mirrors>
+</settings>

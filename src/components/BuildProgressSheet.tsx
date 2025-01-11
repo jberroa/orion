@@ -2,8 +2,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, Circle, Loader2, XCircle, Terminal, ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useState } from "react";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { useState, useRef, useMemo, useEffect } from "react";
 
 export type Step = {
   id: string;
@@ -20,6 +20,7 @@ type BuildProgressSheetProps = {
 
 export function BuildProgressSheet({ open, onOpenChange, steps }: BuildProgressSheetProps) {
   const [isTerminalCollapsed, setIsTerminalCollapsed] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const hasError = steps.some(step => step.status === 'error');
   const activeStep = steps.find(step => step.status === 'in-progress');
   
@@ -54,11 +55,9 @@ export function BuildProgressSheet({ open, onOpenChange, steps }: BuildProgressS
     (steps.filter(step => step.status === 'completed').length / steps.length) * 100
   );
 
-  // Combine all logs and status updates in chronological order
-  const terminalMessages = steps.flatMap(step => {
+  // Memoize terminal messages to prevent unnecessary recalculations
+  const terminalMessages = useMemo(() => steps.flatMap(step => {
     const messages = [];
-
-    // Add initial "Processing..." message if step has started
     if (step.status !== 'pending') {
       messages.push({
         type: 'status',
@@ -68,7 +67,6 @@ export function BuildProgressSheet({ open, onOpenChange, steps }: BuildProgressS
       });
     }
 
-    // Add all logs
     messages.push(...step.logs.map(log => ({
       type: 'log',
       stepId: step.id,
@@ -76,7 +74,6 @@ export function BuildProgressSheet({ open, onOpenChange, steps }: BuildProgressS
       isError: log.toLowerCase().includes('error')
     })));
 
-    // Add final status message if step is completed or errored
     if (step.status === 'completed') {
       messages.push({
         type: 'status',
@@ -94,7 +91,17 @@ export function BuildProgressSheet({ open, onOpenChange, steps }: BuildProgressS
     }
 
     return messages;
-  });
+  }), [steps]);
+
+  // Updated auto-scroll effect
+  useEffect(() => {
+    if (!isTerminalCollapsed && scrollRef.current) {
+      const scrollElement = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollElement) {
+        scrollElement.scrollTop = scrollElement.scrollHeight;
+      }
+    }
+  }, [terminalMessages.length, isTerminalCollapsed]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -151,13 +158,18 @@ export function BuildProgressSheet({ open, onOpenChange, steps }: BuildProgressS
               "transition-all duration-200 overflow-hidden",
               isTerminalCollapsed ? "h-0" : "h-[200px]"
             )}>
-              <ScrollArea className="h-full" type="always">
-                <div className="font-mono text-xs p-2 space-y-1">
+              <ScrollArea 
+                ref={scrollRef} 
+                className="h-full relative"
+                type="always"
+                scrollHideDelay={0}
+              >
+                <div className="font-mono text-xs p-2 min-w-full inline-block pb-6 pr-6">
                   {terminalMessages.map((message, i) => (
                     <div 
                       key={i} 
                       className={cn(
-                        "py-0.5 break-all whitespace-pre-wrap",
+                        "py-1 min-h-[20px] flex flex-row items-start min-w-fit whitespace-nowrap",
                         message.type === 'log' 
                           ? message.isError ? 'text-red-400' : 'text-gray-300'
                           : message.status === 'in-progress' 
@@ -167,11 +179,13 @@ export function BuildProgressSheet({ open, onOpenChange, steps }: BuildProgressS
                               : 'text-red-400'
                       )}
                     >
-                      <span className="text-gray-500 select-none">[{message.stepId}]</span>{' '}
-                      <span className="break-words">{message.content}</span>
+                      <span className="text-gray-500 select-none shrink-0 mr-2">[{message.stepId}]</span>
+                      <span className="whitespace-pre">{message.content}</span>
                     </div>
                   ))}
                 </div>
+                <ScrollBar orientation="vertical" className="mr-0.5" />
+                <ScrollBar orientation="horizontal" className="mb-0.5" />
               </ScrollArea>
             </div>
           </div>

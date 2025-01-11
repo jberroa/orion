@@ -30,5 +30,10 @@ document.addEventListener('DOMContentLoaded', initTheme);
 // Then expose the API
 contextBridge.exposeInMainWorld('electron', {
   invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
+  on: (channel, callback) => {
+    if (channel === 'build-log') {  // Whitelist the build-log channel
+      ipcRenderer.on(channel, (_, data) => callback(data));
+    }
+  },
   // ... your other exposed methods
 }); 

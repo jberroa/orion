@@ -4,14 +4,16 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { spawn } from 'child_process';
 import { app } from 'electron';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
 const execAsync = promisify(exec);
 
-const BUILD_CONTAINERS = {
-  '8': 'maven-builder-java8',
-  '11': 'maven-builder-java11',
-  '17': 'maven-builder-java17'
-};
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const DOCKER_IMAGE = 'bullhorn/multi-java';
+const BUILD_CONTAINER = 'bullhorn-multi-java-builder';
 
 async function ensureBuildContainers(repoPath) {
   try {
@@ -22,39 +24,37 @@ async function ensureBuildContainers(repoPath) {
       throw new Error(`Repository path ${repoPath} does not exist`);
     }
 
-    // Check which containers exist using podman
-    const { stdout: existingContainers } = await execAsync('podman ps -a --format "{{.Names}}"');
+    // Check if the custom image exists
+    const { stdout: images } = await execAsync(`docker images ${DOCKER_IMAGE} --format "{{.Repository}}"`);
+    if (!images.includes(DOCKER_IMAGE)) {
+      console.log('Building custom Maven multi-Java image...');
+      try {
+        // Point to the docker directory for the build context
+        const dockerContext = path.join(dirname(__filename), '..', '..', 'docker');
+        await execAsync(`docker build -t ${DOCKER_IMAGE} -f "${dockerContext}/Dockerfile" "${dockerContext}"`);
+        console.log('Successfully built custom Maven multi-Java image');
+      } catch (error) {
+        throw new Error(`Failed to build Docker image: ${error.message}`);
+      }
+    }
+
+    // Check if container exists using docker
+    const { stdout: existingContainers } = await execAsync('docker ps -a --format "{{.Names}}"');
     const existingList = existingContainers.split('\n').filter(Boolean);
 
-    for (const [version, containerName] of Object.entries(BUILD_CONTAINERS)) {
-      if (!existingList.includes(containerName)) {
-        // Create the container if it doesn't exist
-        // Add --privileged and use :z instead of :Z for more relaxed SELinux labeling
-        await execAsync(`podman create \
-          --name ${containerName} \
-          --privileged \
-          -v maven-repo:/root/.m2:z \
-          -v ${repoPath}:/workspace:z \
-          --user $(id -u):$(id -g) \
-          docker.io/azul/zulu-openjdk:${version}-latest`);
-        
-        console.log(`Created build container for Java ${version}`);
-      } else {
-        // Remove existing container and recreate it
-        try {
-          await execAsync(`podman rm -f ${containerName}`);
-          await execAsync(`podman create \
-            --name ${containerName} \
-            --privileged \
-            -v maven-repo:/root/.m2:z \
-            -v ${repoPath}:/workspace:z \
-            --user $(id -u):$(id -g) \
-            docker.io/azul/zulu-openjdk:${version}-latest`);
-        } catch (error) {
-          console.error(`Error recreating container ${containerName}:`, error);
-          throw error;
-        }
-      }
+    if (!existingList.includes(BUILD_CONTAINER)) {
+      // Create the container
+      await execAsync(`docker create \
+        --name ${BUILD_CONTAINER} \
+        --network host \
+        -v maven-repo:/root/.m2 \
+        -v ${repoPath}:/workspace \
+        ${DOCKER_IMAGE} \
+        tail -f /dev/null`);
+
+      // Start the container
+      await execAsync(`docker start ${BUILD_CONTAINER}`);
+      console.log('Created multi-Java build container');
     }
 
     // Set permissions on the repository path
@@ -65,12 +65,12 @@ async function ensureBuildContainers(repoPath) {
     }
 
   } catch (error) {
-    console.error('Error ensuring build containers:', error);
+    console.error('Error ensuring build container:', error);
     throw error;
   }
 }
 
-const buildWarLocally = async (service, repoPath) => {
+const buildWarLocally = async (service, repoPath, event) => {
   try {
     // Check if repoPath exists
     try {
@@ -79,79 +79,114 @@ const buildWarLocally = async (service, repoPath) => {
       throw new Error(`Repository path ${repoPath} does not exist`);
     }
 
-    const serviceRepoPath = path.join(repoPath, service.path);
-    const javaVersion = service.javaVersion || '11';
-    const containerName = BUILD_CONTAINERS[javaVersion];
+    const serviceRepoPath = path.join(repoPath, service.folder);
+    const javaVersion = service.javaVersion || 8;
 
-    if (!containerName) {
-      throw new Error(`Unsupported Java version: ${javaVersion}`);
-    }
+    // Set JAVA_HOME based on version
+    const javaHome = javaVersion === 8 ? '/opt/java/temurin-8-jdk' : '/opt/java/openjdk';
 
     // Pass repoPath to ensureBuildContainers
     await ensureBuildContainers(repoPath);
 
     // Start the container if it's not running
     try {
-      await execAsync(`podman start ${containerName}`);
+      await execAsync(`docker start ${BUILD_CONTAINER}`);
     } catch (error) {
-      console.error(`Error starting container ${containerName}:`, error);
+      console.error(`Error starting container ${BUILD_CONTAINER}:`, error);
       // If start fails, try to recreate the container
       await ensureBuildContainers(repoPath);
-      await execAsync(`podman start ${containerName}`);
+      await execAsync(`docker start ${BUILD_CONTAINER}`);
     }
 
-    // Execute maven build in the container with explicit permissions
+    // Execute maven build in the container
+    const buildString = `pwd && ls && env && cd /workspace/${service.subRepo ? service.parentFolder : service.folder} && mvn package ${service.buildParams ?? ''} -DskipBuildInfo -Dmaven.test.skip ${service.subRepo ? `-am -pl ${service.folder}` : ''}`;
+
     const buildCommand = [
-      'podman', 'exec',
-      '--user', `$(id -u):$(id -g)`,  // Run as current user
-      '-w', `/workspace/${service.path}`,
-      containerName,
+      'docker', 'exec',
+      '-w', `/workspace/`,
+      '-e', `JAVA_HOME=${javaHome}`,
+      BUILD_CONTAINER,
       '/bin/sh', '-c',
-      `mkdir -p /root/.m2 && mvn package -DskipBuildInfo -Dmaven.test.skip -T 4 -am -pl .`
+      buildString
     ];
+
+    console.log(buildCommand);
 
     return new Promise((resolve, reject) => {
       const buildProcess = spawn(buildCommand[0], buildCommand.slice(1), {
         env: {
-          ...process.env,
+          PATH: process.env.PATH,
+          HOME: process.env.HOME,
           MAVEN_OPTS: '-Xmx1024m'
         }
       });
 
-      const logs = [];
+      let buildSuccess = false;
+      let logBuffer = '';
+      let lastSendTime = Date.now();
+      const BATCH_INTERVAL = 100; // Send logs every 100ms
+
+      const sendBufferedLogs = () => {
+        if (logBuffer) {
+          event.sender.send('build-log', { stepId: 'local', log: logBuffer });
+          logBuffer = '';
+          lastSendTime = Date.now();
+        }
+      };
 
       buildProcess.stdout.on('data', (data) => {
         const log = data.toString();
-        logs.push(log);
-        global.mainWindow.webContents.send('build-log', {
-          serviceId: service.id,
-          log: log
-        });
+        console.log(log);
+        
+        // Check for build success message
+        if (log.includes('BUILD SUCCESS')) {
+          buildSuccess = true;
+        }
+
+        // Append to buffer instead of sending immediately
+        logBuffer += log;
+
+        // Send buffered logs if enough time has passed
+        if (Date.now() - lastSendTime >= BATCH_INTERVAL) {
+          sendBufferedLogs();
+        }
       });
 
       buildProcess.stderr.on('data', (data) => {
         const log = data.toString();
-        logs.push(log);
-        global.mainWindow.webContents.send('build-log', {
-          serviceId: service.id,
-          log: log
-        });
+        console.log(log);
+        
+        // Append to buffer instead of sending immediately
+        logBuffer += log;
+
+        // Send buffered logs if enough time has passed
+        if (Date.now() - lastSendTime >= BATCH_INTERVAL) {
+          sendBufferedLogs();
+        }
       });
 
       buildProcess.on('close', (code) => {
-        if (code === 0) {
-          resolve(logs);
+        // Send any remaining logs
+        sendBufferedLogs();
+        
+        if (code === 0 && buildSuccess) {
+          resolve({ success: true, serviceName: service.id });
         } else {
-          reject(new Error(`Maven build failed with exit code ${code}`));
+          reject(new Error(`Maven build failed for service ${service.id}`));
         }
       });
 
       buildProcess.on('error', (error) => {
+        sendBufferedLogs();
         reject(error);
       });
     });
   } catch (error) {
     console.error(`Error building war for ${service.id}:`, error);
+    event.sender.send('build-log', { 
+      stepId: 'local', 
+      log: `Error: ${error.message}` 
+    });
     throw error;
   }
 };
@@ -168,44 +203,37 @@ export const setupDockerHandlers = (ipcMain) => {
         await fs.readFile(path.join(app.getPath('userData'), 'settings.json'), 'utf-8')
       );
 
-      // Add debug logging
-      console.log('Settings loaded:', settings);
-      console.log('Repository path:', settings.repoPath);
-
       if (!settings.repoPath) {
         throw new Error('Repository path is not configured in settings');
       }
 
       const localServices = enabledServices.filter(service => service.branch === 'local');
+      const results = [];
       
+      // Build each service and collect results
       for (const service of localServices) {
-        await buildWarLocally(service, settings.repoPath);
-
-        // Create temporary .env file for this service
-        const serviceRepoPath = path.join(settings.repoPath, service.path);
-        const warFile = path.join(serviceRepoPath, 'target', '*.war');
-        const javaVersion = service.javaVersion || '11';
-        const baseImage = `docker.io/tomcat:${javaVersion === '8' ? '8.5' : '9.0'}-jdk${javaVersion}`;
-
-        const envFile = path.join(process.cwd(), 'docker', '.env');
-        await fs.writeFile(
-          envFile,
-          `SERVICE_ID=${service.id}\n` +
-          `WAR_FILE=${warFile}\n` +
-          `PORT=${service.port}\n` +
-          `BASE_IMAGE=${baseImage}`
-        );
-
-        // Use podman-compose instead of docker-compose
-        await execAsync(
-          `podman-compose -f docker/docker-compose.template.yml up -d --build`,
-          { cwd: process.cwd() }
-        );
-
-        await fs.unlink(envFile).catch(console.error);
+        try {
+          const result = await buildWarLocally(service, settings.repoPath, event);
+          results.push(result);
+        } catch (error) {
+          results.push({ 
+            success: false, 
+            serviceName: service.id, 
+            error: error.message 
+          });
+        }
       }
 
-      return { success: true };
+      // Check if all builds were successful
+      const allSucceeded = results.every(result => result.success);
+      const failedServices = results.filter(result => !result.success)
+                                  .map(result => result.serviceName);
+
+      return {
+        success: allSucceeded,
+        results,
+        failedServices,
+      };
     } catch (error) {
       console.error('Error building local services:', error);
       throw error;
@@ -214,7 +242,7 @@ export const setupDockerHandlers = (ipcMain) => {
 
   ipcMain.handle('kill-docker-containers', async () => {
     try {
-      await execAsync('podman kill $(podman ps -q)');
+      await execAsync('docker kill $(docker ps -q)');
       return true;
     } catch (error) {
       console.error('Error killing containers:', error);
@@ -225,7 +253,7 @@ export const setupDockerHandlers = (ipcMain) => {
   ipcMain.handle('get-container-logs', async (event, tomcatId) => {
     try {
       const { stdout: containerId } = await execAsync(
-        `podman ps --filter "name=tomcat-${tomcatId}" --format "{{.ID}}"`
+        `docker ps --filter "name=tomcat-${tomcatId}" --format "{{.ID}}"`
       );
 
       if (!containerId.trim()) {
@@ -233,7 +261,7 @@ export const setupDockerHandlers = (ipcMain) => {
       }
 
       const { stdout: logs } = await execAsync(
-        `podman logs ${containerId.trim()} --tail 1000`
+        `docker logs ${containerId.trim()} --tail 1000`
       );
 
       return logs;
@@ -245,7 +273,7 @@ export const setupDockerHandlers = (ipcMain) => {
 
   ipcMain.handle('get-container-statuses', async () => {
     try {
-      const { stdout } = await execAsync('podman ps --format "{{.Names}}"');
+      const { stdout } = await execAsync('docker ps --format "{{.Names}}"');
       const runningContainers = stdout.split('\n').filter(Boolean);
       
       const statuses = {
