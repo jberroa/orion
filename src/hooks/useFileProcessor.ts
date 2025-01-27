@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Service } from '@/types/service';
+import { useState } from "react";
+import { Service } from "@/types/service";
 
 interface UseFileProcessorReturn {
   files: string[];
@@ -8,26 +8,39 @@ interface UseFileProcessorReturn {
   handlePlay: (qaBox: string, services: Service[]) => Promise<void>;
   handleStop: () => void;
   handleNext: () => void;
+  setProcessStatus: (status: "running" | "stopped" | "error") => void;
 }
 
 export function useFileProcessor(): UseFileProcessorReturn {
   const [files, setFiles] = useState<string[]>([]);
   const [currentFileIndex, setCurrentFileIndex] = useState(-1);
-  const [processStatus, setProcessStatus] = useState<"running" | "stopped" | "error">("stopped");
+  const [processStatus, setProcessStatus] = useState<
+    "running" | "stopped" | "error"
+  >("stopped");
 
-  const handlePlay = async (qaBox: string, services: Service[]) => {
-    console.log('Processing with QA Box:', qaBox);
+  const handlePlay = async (
+    qaBox: string,
+    services: {
+      allServices: Service[];
+      favorites: Service[];
+      enabled: Service[];
+    }
+  ) => {
+    console.log("Processing with QA Box:", qaBox);
     try {
       if (!window.electron) {
-        throw new Error('Electron API not available');
+        throw new Error("Electron API not available");
       }
-      
-      const filesList = await window.electron.invoke('create-properties-files', services);
+
+      const filesList = await window.electron.invoke(
+        "create-properties-files",
+        services
+      );
       setFiles(filesList);
       setCurrentFileIndex(0);
       setProcessStatus("running");
     } catch (error) {
-      console.error('Error creating properties files:', error);
+      console.error("Error creating properties files:", error);
       setProcessStatus("error");
     }
   };
@@ -39,7 +52,7 @@ export function useFileProcessor(): UseFileProcessorReturn {
 
   const handleNext = () => {
     if (currentFileIndex < files.length - 1) {
-      setCurrentFileIndex(prev => prev + 1);
+      setCurrentFileIndex((prev) => prev + 1);
     } else {
       handleStop();
     }
@@ -52,5 +65,6 @@ export function useFileProcessor(): UseFileProcessorReturn {
     handlePlay,
     handleStop,
     handleNext,
+    setProcessStatus
   };
-} 
+}

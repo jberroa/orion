@@ -32,7 +32,7 @@ export function BranchSelector({
 }: BranchSelectorProps) {
   const [open, setOpen] = React.useState(false)
   const [value, setValue] = React.useState(externalValue || "")
-  const { branches, isLoading, error } = useGitBranches(gitUrl);
+  const { branches, isLoading, error, fetchBranches } = useGitBranches(gitUrl, { enabled: false });
 
   // Sync with external value
   React.useEffect(() => {
@@ -40,6 +40,13 @@ export function BranchSelector({
       setValue(externalValue);
     }
   }, [externalValue]);
+
+  // Fetch branches when popover opens
+  React.useEffect(() => {
+    if (open) {
+      fetchBranches();
+    }
+  }, [open, fetchBranches]);
 
   const handleSelect = (currentValue: string) => {
     const newValue = currentValue === value ? "" : currentValue;

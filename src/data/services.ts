@@ -38,7 +38,7 @@ const createService = (
   subRepo: config.subRepo || false,
 });
 
-export const initialServices: Service[] = [
+export const services: Service[] = [
   createService({
     name: "DS 3.0",
     parentFolder: "core-services",

@@ -25,7 +25,12 @@ declare global {
       invoke(channel: 'initialize-tomcat-folders'): Promise<void>;
       invoke(channel: 'download-remote-services', enabled: Service[]): Promise<void>;
       invoke(channel: 'copy-war-files', enabled: Service[]): Promise<void>;
-      invoke(channel: 'create-properties-files', services: Service[]): Promise<string[]>;
+      invoke(channel: 'create-properties-files', services: {
+        allServices: Service[];
+        favorites: Service[];
+        enabled: Service[];
+    }): Promise<string[]>;
+      invoke(channel: 'start-tomcat-containers', { tomcatNumbers, paths }): Promise<void>;
       on: (channel: string, callback: (data: any) => void) => void;
     };
   }

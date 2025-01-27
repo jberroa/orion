@@ -55,10 +55,12 @@ export function BuildProgressSheet({ open, onOpenChange, steps }: BuildProgressS
     (steps.filter(step => step.status === 'completed').length / steps.length) * 100
   );
 
-  // Memoize terminal messages to prevent unnecessary recalculations
+  // Modify the terminal messages logic to preserve logs
   const terminalMessages = useMemo(() => steps.flatMap(step => {
     const messages = [];
-    if (step.status !== 'pending') {
+    
+    // Don't clear previous messages when error occurs
+    if (step.status !== 'pending' || step.logs.length > 0) {
       messages.push({
         type: 'status',
         stepId: step.id,
@@ -67,6 +69,7 @@ export function BuildProgressSheet({ open, onOpenChange, steps }: BuildProgressS
       });
     }
 
+    // Always include logs even if step status changes
     messages.push(...step.logs.map(log => ({
       type: 'log',
       stepId: step.id,
@@ -74,6 +77,7 @@ export function BuildProgressSheet({ open, onOpenChange, steps }: BuildProgressS
       isError: log.toLowerCase().includes('error')
     })));
 
+    // Add completion/error status message if applicable
     if (step.status === 'completed') {
       messages.push({
         type: 'status',
@@ -112,7 +116,7 @@ export function BuildProgressSheet({ open, onOpenChange, steps }: BuildProgressS
         <div className="flex-1 flex flex-col min-h-0 space-y-4">
           <div className="space-y-6">
             <Progress 
-              value={hasError ? 100 : progress} 
+              value={progress}
               className={cn(
                 "mb-4",
                 hasError ? "bg-red-100 [&>div]:bg-red-500" : ""
@@ -155,8 +159,8 @@ export function BuildProgressSheet({ open, onOpenChange, steps }: BuildProgressS
             </button>
             
             <div className={cn(
-              "transition-all duration-200 overflow-hidden",
-              isTerminalCollapsed ? "h-0" : "h-[200px]"
+              "transition-all duration-200 overflow-hidden flex-1",
+              isTerminalCollapsed ? "h-0" : "flex-1"
             )}>
               <ScrollArea 
                 ref={scrollRef} 

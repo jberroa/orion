@@ -4,6 +4,9 @@ import path from 'path';
 import fs from 'fs';
 import { setupIpcHandlers } from './ipc/index.js';
 import { ensureSettingsFile } from './ipc/fileHandlers.js';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+const execAsync = promisify(exec);
 
 // Define __dirname for ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -113,7 +116,56 @@ app.on('window-all-closed', () => {
 });
 
 // Add this to ensure proper cleanup
-app.on('before-quit', () => {
+app.on('before-quit', async (event) => {
   console.log('App is quitting...');
-  app.quit();
+  event.preventDefault();
+  
+  let repoPath, confPath, dockerComposePath;
+  
+  try {
+    // Get settings from app's user data path
+    const settings = JSON.parse(
+      fs.readFileSync(path.join(app.getPath('userData'), 'settings.json'), 'utf-8')
+    );
+
+    dockerComposePath = path.join(
+      app.isPackaged ? process.resourcesPath : process.cwd(),
+      "docker",
+      "docker-compose.yml"
+    );
+    
+    // Use repoPath from settings
+    repoPath = settings.repoPath;
+    confPath = app.isPackaged
+      ? path.join(process.resourcesPath, 'conf')
+      : path.join(process.cwd(), 'conf');
+
+    // Check if containers are running
+    const checkCommand = `PATH_TO_REPOS=${repoPath} PATH_TO_CONF=${confPath} podman compose -f ${dockerComposePath} ps --quiet`;
+    const { stdout } = await execAsync(checkCommand);
+    
+    if (!stdout.trim()) {
+      console.log('No Docker Compose containers running, skipping shutdown...');
+      return true;
+    }
+    
+    const command = `PATH_TO_REPOS=${repoPath} PATH_TO_CONF=${confPath} podman compose -f ${dockerComposePath} down --timeout 10`;
+    
+    console.log('Containers running, attempting graceful docker shutdown...');
+    await execAsync(command);
+    return true;
+  } catch (error) {
+    console.error('Error during graceful docker shutdown:', error);
+    
+    try {
+      // Also include env vars in force shutdown
+      const command = `PATH_TO_REPOS=${repoPath} PATH_TO_CONF=${confPath} podman compose -f ${dockerComposePath} down -t 1`;
+      console.log('Attempting force docker shutdown...');
+      await execAsync(command);
+      return true;
+    } catch (forceError) {
+      console.error('Force shutdown also failed:', forceError);
+      return false;
+    }
+  }
 });

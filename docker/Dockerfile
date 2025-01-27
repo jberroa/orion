@@ -2,7 +2,14 @@
 FROM --platform=linux/amd64 maven:3.9.9-eclipse-temurin-17
 
 # Install necessary tools (using apt-get instead of apk)
-RUN apt-get update && apt-get install -y wget tar && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y \
+    wget \
+    tar \
+    nano \
+    iputils-ping \
+    net-tools \
+    dnsutils \
+    && rm -rf /var/lib/apt/lists/*
 
 # Define installation directory for additional JDKs
 ENV INSTALL_DIR=/opt/java

@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  tomcat2:
+    container_name: tomcat2
+    image: bullhorn/multi-java
+    platform: linux/amd64
+    volumes:
+      - ${PATH_TO_REPOS}/tomcat:/app/tomcat
+      - ${PATH_TO_CONF}:/app/conf
+    working_dir: /app/tomcat/instance2/bin
+    command: ["sh", "-c", "chmod +x catalina.sh && ./catalina.sh start"]
+    environment:
+      DEVMACHINE_HOME: /app
+      PATH_TO_REPOS: /app
+  #     JAVA_OPTS: "-Djava.net.preferIPv4Stack=true -Djava.net.preferIPv6Addresses=false"
+    ports:
+      - "8182:8182"
+      - "7001:7001"
+
+  tomcat3:
+    container_name: tomcat3
+    image: bullhorn/multi-java
+    platform: linux/amd64
+    volumes:
+      - ${PATH_TO_REPOS}/tomcat:/app/tomcat
+      - ${PATH_TO_CONF}:/app/conf
+    working_dir: /app/tomcat/instance3/bin
+    command: ["sh", "-c", "chmod +x catalina.sh && ./catalina.sh start"]
+    environment:
+      DEVMACHINE_HOME: /app
+      PATH_TO_REPOS: /app
+  #     JAVA_OPTS: "-Djava.net.preferIPv4Stack=true -Djava.net.preferIPv6Addresses=false"
+    ports:
+      - "8183:8183"
+      - "7002:7002"
+
+  tomcat4:
+    container_name: tomcat4
+    image: bullhorn/multi-java
+    platform: linux/amd64
+    # network_mode: "host"
+    volumes:
+      - ${PATH_TO_REPOS}/tomcat10:/app/tomcat10
+      - ${PATH_TO_CONF}:/app/conf
+    working_dir: /app/tomcat10/instance4/bin
+    command: ["bash", "-c", "chmod +x catalina.sh && ./catalina.sh start"]
+    environment:
+      # <<: *proxy-env
+      DEVMACHINE_HOME: /app
+      PATH_TO_REPOS: /app
+      # JAVA_OPTS: "-Djava.net.preferIPv4Stack=true -Djava.net.preferIPv6Addresses=false"
+    ports:
+      - "8184:8184"
+      - "7003:7003"
+
+  tomcat5:
+    container_name: tomcat5
+    image: bullhorn/multi-java
+    platform: linux/amd64
+    # network_mode: "host"
+    volumes:
+      - ${PATH_TO_REPOS}/tomcat10:/app/tomcat10
+      - ${PATH_TO_CONF}:/app/conf
+    working_dir: /app/tomcat10/instance5/bin
+    command: ["sh", "-c", "chmod +x catalina.sh && ./catalina.sh start"]
+    environment:
+      # <<: *proxy-env
+      DEVMACHINE_HOME: /app
+      PATH_TO_REPOS: /app
+    ports:
+      - "8185:8185"
+      - "7004:7004"

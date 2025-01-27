@@ -7,7 +7,7 @@ interface ServiceControlsProps {
   onStop?: () => void
   status?: "running" | "stopped" | "error"
   currentFile?: string
-  disabled?: boolean
+  enabledServicesCount: number
 }
 
 export function ServiceControls({ 
@@ -15,8 +15,12 @@ export function ServiceControls({
   onStop, 
   status = "stopped",
   currentFile,
-  disabled
+  enabledServicesCount = 0
 }: ServiceControlsProps) {
+  console.log('Enabled services:', enabledServicesCount); // Debug log
+  console.log('Status:', status); // Debug log
+  console.log('Button disabled:', status === 'running' || enabledServicesCount === 0); // Debug condition
+  
   return (
     <div className="flex items-center gap-4">
       <Button 
@@ -24,7 +28,7 @@ export function ServiceControls({
         size="icon" 
         className="h-8 w-8" 
         onClick={onPlay}
-        disabled={disabled || status === 'running'}
+        disabled={status === 'running' || enabledServicesCount === 0}
       >
         <Play className="h-4 w-4" />
       </Button>
@@ -33,7 +37,7 @@ export function ServiceControls({
         size="icon" 
         className="h-8 w-8" 
         onClick={onStop}
-        disabled={disabled || status !== 'running'}
+        disabled={status !== 'running'}
       >
         <Square className="h-4 w-4" />
       </Button>

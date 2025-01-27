@@ -1,148 +1,157 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import type { Service } from '@/types/service';
-import { initialServices } from '@/data/services';
+import { services } from '@/data/services';  // Import directly
 
 interface ServicesContextType {
-  services: Service[];
   showFavorites: boolean;
   setShowFavorites: (show: boolean) => void;
   sections: {
-    allServices: Service[];
+    all: Service[];
     favorites: Service[];
     enabled: Service[];
   };
-  toggleFavorite: (serviceId: string) => void;
-  toggleEnabled: (serviceId: string) => void;
-  toggleServiceEnabled: (serviceId: string) => void;
-  toggleServiceFavorite: (serviceId: string) => void;
-  updateServiceBranch: (serviceId: string, branch: string) => void;
+  toggleFavorite: (id: string) => void;
+  toggleEnabled: (id: string) => void;
+  skipTests: boolean;
+  forceUpdate: boolean;
+  setSkipTests: (checked: boolean) => void;
+  setForceUpdate: (checked: boolean) => void;
   selectedQABox: string;
   setSelectedQABox: (qa: string) => void;
 }
 
+// Export the context
 export const ServicesContext = createContext<ServicesContextType | undefined>(undefined);
 
 export function ServicesProvider({ children }: { children: React.ReactNode }) {
-  const [services, setServices] = useState<Service[]>(initialServices);
-  const [enabledIds, setEnabledIds] = useState<string[]>([]);
-  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [servicesList, setServicesList] = useState<Service[]>([]);
   const [showFavorites, setShowFavorites] = useState(false);
-  const [selectedQABox, setSelectedQABox] = useState("");
+  const [skipTests, setSkipTests] = useState(false);
+  const [forceUpdate, setForceUpdate] = useState(false);
+  const [selectedQABox, setSelectedQABox] = useState('');
 
-  // Load settings on mount
+  // Load initial states from settings
   useEffect(() => {
     const loadSettings = async () => {
-      const settings = await window.electron.invoke('get-settings');
-      if (settings.selectedQABox) {
-        setSelectedQABox(settings.selectedQABox);
-      }
-      if (settings.enabledServices) {
-        setEnabledIds(settings.enabledServices);
-        // Update services enabled state
-        setServices(prevServices =>
-          prevServices.map(service => ({
-            ...service,
-            enabled: settings.enabledServices.includes(service.id)
-          }))
-        );
-      }
-      if (settings.favoriteServices) {
-        setFavoriteIds(settings.favoriteServices);
-        // Update services favorite state
-        setServices(prevServices =>
-          prevServices.map(service => ({
-            ...service,
-            favorite: settings.favoriteServices.includes(service.id)
-          }))
-        );
+      try {
+        const settings = await window.electron.invoke('get-settings');
+        const enabledServices = settings.enabledServices || [];
+        const favoriteServices = settings.favoriteServices || [];
+        
+        // Load QA box selection
+        if (settings.selectedQABox) {
+          setSelectedQABox(settings.selectedQABox);
+        }
+        
+        // Initialize services with saved states
+        setServicesList(services.map((service) => ({
+          ...service,
+          id: service.name,
+          enabled: enabledServices.includes(service.name),
+          favorite: favoriteServices.includes(service.name)
+        })));
+      } catch (error) {
+        console.error('Failed to load settings:', error);
       }
     };
+
     loadSettings();
   }, []);
 
-  // Save settings when they change
+  // Save service states whenever they change
   useEffect(() => {
-    const saveSettings = async () => {
-      const settings = await window.electron.invoke('get-settings');
-      await window.electron.invoke('save-settings', {
-        ...settings,
-        selectedQABox,
-        enabledServices: enabledIds,
-        favoriteServices: favoriteIds
-      });
+    const saveServicesState = async () => {
+      try {
+        const currentSettings = await window.electron.invoke('get-settings');
+        
+        const enabledServices = servicesList
+          .filter(service => service.enabled)
+          .map(service => service.name);
+
+        const favoriteServices = servicesList
+          .filter(service => service.favorite)
+          .map(service => service.name);
+
+        await window.electron.invoke('save-settings', {
+          ...currentSettings,
+          enabledServices,
+          favoriteServices
+        });
+      } catch (error) {
+        console.error('Failed to save service states:', error);
+      }
     };
-    saveSettings();
-  }, [enabledIds, favoriteIds, selectedQABox]);
 
-  // Compute sections from IDs
-  const sections = {
-    allServices: services,
-    favorites: services.filter(service => favoriteIds.includes(service.id)),
-    enabled: services.filter(service => enabledIds.includes(service.id))
-  };
+    if (servicesList.length > 0) {
+      saveServicesState();
+    }
+  }, [servicesList]);
 
-  const toggleEnabled = (serviceId: string) => {
-    // Update enabledIds
-    setEnabledIds(prev => 
-      prev.includes(serviceId) 
-        ? prev.filter(id => id !== serviceId)
-        : [...prev, serviceId]
-    );
-    
-    // Update services state
-    setServices(prevServices =>
+  // Save QA box selection whenever it changes
+  useEffect(() => {
+    const saveQABox = async () => {
+      try {
+        const currentSettings = await window.electron.invoke('get-settings');
+        await window.electron.invoke('save-settings', {
+          ...currentSettings,
+          selectedQABox
+        });
+      } catch (error) {
+        console.error('Failed to save QA box selection:', error);
+      }
+    };
+
+    if (selectedQABox) {
+      saveQABox();
+    }
+  }, [selectedQABox]);
+
+  // Compute sections based on the current view
+  const sections = useMemo(() => ({
+    all: servicesList,
+    favorites: servicesList.filter(service => service.favorite),
+    enabled: servicesList.filter(service => service.enabled)
+  }), [servicesList]);
+
+  // Toggle handlers with logging
+  const toggleFavorite = (id: string) => {
+    console.log('Toggling favorite for:', id);
+    setServicesList(prevServices =>
       prevServices.map(service =>
-        service.id === serviceId
-          ? { ...service, enabled: !service.enabled }
-          : service
-      )
-    );
-  };
-
-  const toggleFavorite = (serviceId: string) => {
-    // Update favoriteIds
-    setFavoriteIds(prev => 
-      prev.includes(serviceId)
-        ? prev.filter(id => id !== serviceId)
-        : [...prev, serviceId]
-    );
-    
-    // Update services state
-    setServices(prevServices =>
-      prevServices.map(service =>
-        service.id === serviceId
+        service.id === id
           ? { ...service, favorite: !service.favorite }
           : service
       )
     );
   };
 
-  const updateServiceBranch = (serviceId: string, branch: string) => {
-    setServices(prevServices =>
+  const toggleEnabled = (id: string) => {
+    console.log('Toggling enabled for:', id);
+    setServicesList(prevServices =>
       prevServices.map(service =>
-        service.id === serviceId
-          ? { ...service, branch }
+        service.id === id
+          ? { ...service, enabled: !service.enabled }
           : service
       )
     );
   };
 
+  const value = {
+    showFavorites,
+    setShowFavorites,
+    sections,
+    toggleFavorite,
+    toggleEnabled,
+    skipTests,
+    forceUpdate,
+    setSkipTests,
+    setForceUpdate,
+    selectedQABox,
+    setSelectedQABox,
+  };
+
   return (
-    <ServicesContext.Provider
-      value={{
-        services,
-        showFavorites,
-        setShowFavorites,
-        sections,
-        toggleFavorite,
-        toggleEnabled,
-        toggleServiceEnabled: toggleEnabled,
-        toggleServiceFavorite: toggleFavorite,
-        updateServiceBranch,
-        selectedQABox,
-        setSelectedQABox,
-      }}
-    >
+    <ServicesContext.Provider value={value}>
       {children}
     </ServicesContext.Provider>
   );

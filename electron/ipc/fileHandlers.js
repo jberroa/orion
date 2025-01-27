@@ -58,7 +58,6 @@ const getSettings = async () => {
     
     return {
       ...settings,
-      services: settings.services || { favorites: [], enabled: [] },
       repoPath: settings.repoPath || "",
       maxLogLength: settings.maxLogLength || 1000,
       masterUsername: settings.masterUsername || "",
@@ -78,21 +77,84 @@ const getSettings = async () => {
       instanceUsername: "",
       instancePassword: "",
       selectedQABox: "",
-      services: { favorites: [], enabled: [] }
     };
   }
 };
 
 const saveSettings = async (settings) => {
+  const userDataPath = app.getPath("userData");
+  const configPath = path.join(userDataPath, "settings.json");
+  
+  // First, read the existing settings as backup
+  let previousSettings;
   try {
-    const userDataPath = app.getPath("userData");
-    const configPath = path.join(userDataPath, "settings.json");
+    previousSettings = JSON.parse(await fs.promises.readFile(configPath, 'utf8'));
+  } catch (error) {
+    console.error("Error reading previous settings for backup:", error);
+    previousSettings = null;
+  }
+
+  // Log the settings object we're trying to save
+  console.log("Attempting to save settings:", JSON.stringify(settings, null, 2));
+
+  try {
     await fs.promises.writeFile(configPath, JSON.stringify(settings, null, 2));
     return true;
   } catch (error) {
     console.error("Error saving settings:", error);
+    
+    // Attempt to restore previous settings if we have them
+    if (previousSettings) {
+      try {
+        console.log("Attempting to restore previous settings...");
+        await fs.promises.writeFile(configPath, JSON.stringify(previousSettings, null, 2));
+        console.log("Successfully restored previous settings");
+      } catch (restoreError) {
+        console.error("Error restoring previous settings:", restoreError);
+      }
+    }
+    
     return false;
   }
+};
+
+const processRepoForTokens = (tokenArray, replacementArray, repo, tomcatNumber, machine, selectedPackages) => {
+    if (repo.tokenName) {
+        tokenArray.push(new RegExp('{{' + repo.tokenName + '}}', 'g'));
+
+        let tokenValue = 'UNKNOWN';
+        if (tomcatNumber === 1) {
+            tokenValue = `http://${machine.tomcat1}/${repo.webPath}`;
+        } else if (tomcatNumber === 2) {
+            tokenValue = `http://${machine.tomcat2}/${repo.webPath}`;
+        } else if (tomcatNumber === 3) {
+            tokenValue = `http://${machine.tomcat3}/${repo.webPath}`;
+        } else if (tomcatNumber === 4) {
+            tokenValue = `http://${machine.tomcat4}/${repo.webPath}`;
+        } else if (tomcatNumber === 5) {
+            tokenValue = `http://${machine.tomcat5}/${repo.webPath}`;
+        }
+
+        for (let i = 0; i < selectedPackages.length; i++) {
+            let val = selectedPackages[i];
+            if (val.name === repo.name) {
+                if (tomcatNumber === 1) {
+                    tokenValue = `http://${config.tomcat.instance1.server}:${config.tomcat.instance1.port}/${repo.webPath}`
+                } else if (tomcatNumber === 2) {
+                    tokenValue = `http://${config.tomcat.instance2.server}:${config.tomcat.instance2.port}/${repo.webPath}`
+                } else if (tomcatNumber === 3) {
+                    tokenValue = `http://${config.tomcat.instance3.server}:${config.tomcat.instance3.port}/${repo.webPath}`
+                } else if (tomcatNumber === 4) {
+                    tokenValue = `http://${config.tomcat.instance4.server}:${config.tomcat.instance4.port}/${repo.webPath}`
+                } else if (tomcatNumber === 5) {
+                    tokenValue = `http://${config.tomcat.instance5.server}:${config.tomcat.instance5.port}/${repo.webPath}`
+                }
+                break;
+            }
+        }
+
+        replacementArray.push(tokenValue);
+    }
 };
 
 export const setupFileHandlers = (ipcMain) => {
@@ -130,8 +192,13 @@ export const setupFileHandlers = (ipcMain) => {
     let tokenArray = tokenReplacements.map((a) => a.token);
     let replacementArray = tokenReplacements.map((a) => {
       if (typeof a.replacement === "string") return a.replacement;
-      return a.replacement(config, machine, services);
+      return a.replacement(config, machine, services.enabled);
     });
+
+    services.allServices.forEach(service => {
+      processRepoForTokens(tokenArray, replacementArray, service, service.tomcatNumber, machine, services.enabled);
+    })
+
 
     try {
       const options = {
@@ -140,7 +207,7 @@ export const setupFileHandlers = (ipcMain) => {
         to: replacementArray,
       };
       let changes = await replaceInFile(options);
-      console.log("Modified files:", changes.join(", "));
+      //console.log("Modified files:", changes.join(", "));
       console.log("Attempting to read directory:", resourcePath);
 
       const filesw = await fs.promises.readdir(resourcePath);

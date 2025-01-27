@@ -1,24 +1,24 @@
-import { Heart } from 'lucide-react'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useServices } from "@/contexts/ServicesContext"
 
-export interface ServiceTabsProps {
-  value: "favorite" | "all";
-  onValueChange: (value: "favorite" | "all") => void;
-}
+export function ServiceTabs() {
+  const { 
+    showFavorites, 
+    setShowFavorites,
+    skipTests,
+    forceUpdate
+  } = useServices();
 
-export function ServiceTabs({ value, onValueChange }: ServiceTabsProps) {
+  const handleValueChange = (value: string) => {
+    setShowFavorites(value === "favorite");
+  };
+
   return (
-    <Tabs 
-      value={value}
-      onValueChange={(value) => onValueChange(value as "favorite" | "all")}
-    >
+    <Tabs value={showFavorites ? "favorite" : "all"} onValueChange={handleValueChange}>
       <TabsList>
-        <TabsTrigger value="all">All</TabsTrigger>
-        <TabsTrigger value="favorite">
-          <Heart className="mr-2 h-4 w-4" />
-          Favorite
-        </TabsTrigger>
+        <TabsTrigger value="all">All Services</TabsTrigger>
+        <TabsTrigger value="favorite">Favorites</TabsTrigger>
       </TabsList>
     </Tabs>
-  )
+  );
 } 

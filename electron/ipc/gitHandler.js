@@ -6,9 +6,14 @@ const execAsync = promisify(exec);
 export const setupGitHandlers = (ipcMain) => {
   ipcMain.handle('get-git-branches', async (_, gitUrl) => {
     try {
-      // Use git ls-remote to get all refs without cloning
-      const { stdout } = await execAsync(`git ls-remote --heads ${gitUrl}`);
-      
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Git operation timed out after 6 seconds')), 6000);
+      });
+
+      const { stdout } = await Promise.race([
+        execAsync(`git ls-remote --heads ${gitUrl}`),
+        timeoutPromise
+      ]);
       // Parse and clean branch names
       // Format of ls-remote output is: <hash> refs/heads/<branch-name>
       const branches = stdout

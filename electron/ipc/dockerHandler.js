@@ -25,13 +25,13 @@ async function ensureBuildContainers(repoPath) {
     }
 
     // Check if the custom image exists
-    const { stdout: images } = await execAsync(`docker images ${DOCKER_IMAGE} --format "{{.Repository}}"`);
+    const { stdout: images } = await execAsync(`podman images ${DOCKER_IMAGE} --format "{{.Repository}}"`);
     if (!images.includes(DOCKER_IMAGE)) {
       console.log('Building custom Maven multi-Java image...');
       try {
         // Point to the docker directory for the build context
         const dockerContext = path.join(dirname(__filename), '..', '..', 'docker');
-        await execAsync(`docker build -t ${DOCKER_IMAGE} -f "${dockerContext}/Dockerfile" "${dockerContext}"`);
+        await execAsync(`podman build -t ${DOCKER_IMAGE} -f "${dockerContext}/Dockerfile" "${dockerContext}"`);
         console.log('Successfully built custom Maven multi-Java image');
       } catch (error) {
         throw new Error(`Failed to build Docker image: ${error.message}`);
@@ -39,12 +39,12 @@ async function ensureBuildContainers(repoPath) {
     }
 
     // Check if container exists using docker
-    const { stdout: existingContainers } = await execAsync('docker ps -a --format "{{.Names}}"');
+    const { stdout: existingContainers } = await execAsync('podman ps -a --format "{{.Names}}"');
     const existingList = existingContainers.split('\n').filter(Boolean);
 
     if (!existingList.includes(BUILD_CONTAINER)) {
       // Create the container
-      await execAsync(`docker create \
+      await execAsync(`podman create \
         --name ${BUILD_CONTAINER} \
         --network host \
         -v maven-repo:/root/.m2 \
@@ -53,7 +53,7 @@ async function ensureBuildContainers(repoPath) {
         tail -f /dev/null`);
 
       // Start the container
-      await execAsync(`docker start ${BUILD_CONTAINER}`);
+      await execAsync(`podman start ${BUILD_CONTAINER}`);
       console.log('Created multi-Java build container');
     }
 
@@ -90,12 +90,12 @@ const buildWarLocally = async (service, repoPath, event) => {
 
     // Start the container if it's not running
     try {
-      await execAsync(`docker start ${BUILD_CONTAINER}`);
+      await execAsync(`podman start ${BUILD_CONTAINER}`);
     } catch (error) {
       console.error(`Error starting container ${BUILD_CONTAINER}:`, error);
       // If start fails, try to recreate the container
       await ensureBuildContainers(repoPath);
-      await execAsync(`docker start ${BUILD_CONTAINER}`);
+      await execAsync(`podman start ${BUILD_CONTAINER}`);
     }
 
     // Execute maven build in the container
@@ -191,7 +191,43 @@ const buildWarLocally = async (service, repoPath, event) => {
   }
 };
 
+async function startTomcatContainers(tomcatNumbers, paths) {
+  try {
+    const { repoPath } = paths;
+    
+    // Convert tomcat numbers array to container names
+    const containerNames = tomcatNumbers.map(num => `tomcat${num}`).join(' ');
+    const confPath = path.join(
+      app.isPackaged ? process.resourcesPath : process.cwd(),
+      "resources",
+      "conf"
+    );
+
+    const dockerComposePath = path.join(
+      app.isPackaged ? process.resourcesPath : process.cwd(),
+      "docker",
+      "docker-compose.yml"
+    );
+    
+    // Construct and execute the docker-compose command
+    const command = `PATH_TO_REPOS=${repoPath} PATH_TO_CONF=${confPath} podman compose -f ${dockerComposePath} up -d ${containerNames}`;
+    
+    const { stdout, stderr } = await execAsync(command);
+    console.log('Docker-compose output:', stdout);
+    
+    if (stderr) {
+      console.warn('Docker-compose stderr:', stderr);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error starting Tomcat containers:', error);
+    throw error;
+  }
+}
+
 export const setupDockerHandlers = (ipcMain) => {
+
   ipcMain.handle('build-local-services', async (event, enabledServices) => {
     try {
       // Wait for app to be ready
@@ -242,9 +278,13 @@ export const setupDockerHandlers = (ipcMain) => {
 
   ipcMain.handle('kill-docker-containers', async () => {
     try {
-      await execAsync('docker kill $(docker ps -q)');
+      await execAsync('podman kill $(docker ps -q)');
       return true;
     } catch (error) {
+      // If the error is "must provide at least one name or id", it means no containers are running
+      if (error.stderr?.includes('you must provide at least one name or id')) {
+        return true;
+      }
       console.error('Error killing containers:', error);
       throw error;
     }
@@ -253,7 +293,7 @@ export const setupDockerHandlers = (ipcMain) => {
   ipcMain.handle('get-container-logs', async (event, tomcatId) => {
     try {
       const { stdout: containerId } = await execAsync(
-        `docker ps --filter "name=tomcat-${tomcatId}" --format "{{.ID}}"`
+        `podman ps --filter "name=tomcat-${tomcatId}" --format "{{.ID}}"`
       );
 
       if (!containerId.trim()) {
@@ -261,7 +301,7 @@ export const setupDockerHandlers = (ipcMain) => {
       }
 
       const { stdout: logs } = await execAsync(
-        `docker logs ${containerId.trim()} --tail 1000`
+        `podman logs ${containerId.trim()} --tail 1000`
       );
 
       return logs;
@@ -273,7 +313,7 @@ export const setupDockerHandlers = (ipcMain) => {
 
   ipcMain.handle('get-container-statuses', async () => {
     try {
-      const { stdout } = await execAsync('docker ps --format "{{.Names}}"');
+      const { stdout } = await execAsync('podman ps --format "{{.Names}}"');
       const runningContainers = stdout.split('\n').filter(Boolean);
       
       const statuses = {
@@ -297,6 +337,16 @@ export const setupDockerHandlers = (ipcMain) => {
       return statuses;
     } catch (error) {
       console.error('Error getting container statuses:', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('start-tomcat-containers', async (event, { tomcatNumbers, paths }) => {
+    try {
+      const result = await startTomcatContainers(tomcatNumbers, paths);
+      return result;
+    } catch (error) {
+      console.error('Error in start-tomcat-containers handler:', error);
       throw error;
     }
   });

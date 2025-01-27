@@ -1,5 +1,6 @@
 import {
   Heart,
+  Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -7,45 +8,36 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 
 import { BranchSelector } from "./BranchSelector";
 import { ServiceSettings } from "./ServiceSettings";
-import { useServices } from "@/hooks/useServices";
+import { useServices } from "@/contexts/ServicesContext";
 
 interface ServiceCardProps {
+  id: string;
   name: string;
   description: string;
-  serviceId: string;
-  enabled?: boolean;
-  favorite?: boolean;
+  enabled: boolean;
+  favorite: boolean;
   parentRepo?: string;
   gitUrl: string;
   branch: string;
   onBranchChange: (value: string) => void;
-  onFavoriteToggle: () => void;
-  onEnableToggle: () => void;
 }
 
 export function ServiceCard({
+  id,
   name,
   description,
-  serviceId,
-  enabled = false,
-  favorite = false,
+  enabled,
+  favorite,
   parentRepo,
   gitUrl,
   branch,
   onBranchChange,
 }: ServiceCardProps) {
-  const { toggleServiceEnabled, toggleServiceFavorite } = useServices();
-
-  const handleEnableToggle = () => {
-    toggleServiceEnabled(serviceId);
-  };
-
-  const handleFavoriteToggle = () => {
-    toggleServiceFavorite(serviceId);
-  };
+  const { toggleFavorite, toggleEnabled } = useServices();
 
   return (
     <Card className="overflow-hidden min-w-[350px]">
@@ -58,14 +50,14 @@ export function ServiceCard({
             </Badge>
           )}
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex self-start space-x-2">
           <Button
             variant="ghost"
             size="icon"
-            className="text-muted-foreground hover:text-primary"
-            onClick={handleFavoriteToggle}
+            onClick={() => toggleFavorite(id)}
+            className={favorite ? "text-yellow-500" : ""}
           >
-            <Heart
+            <Star
               className={cn("h-4 w-4", favorite && "fill-current text-primary")}
             />
           </Button>
@@ -85,9 +77,9 @@ export function ServiceCard({
           <div className="flex items-center space-x-2">
             <span className="text-sm text-muted-foreground">Enabled</span>
             <Switch
-              id={`service-${serviceId}`}
+              id={`service-${id}`}
               checked={enabled}
-              onCheckedChange={handleEnableToggle}
+              onCheckedChange={() => toggleEnabled(id)}
             />
           </div>
         </div>
