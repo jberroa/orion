@@ -18,6 +18,9 @@ interface ServicesContextType {
   setForceUpdate: (checked: boolean) => void;
   selectedQABox: string;
   setSelectedQABox: (qa: string) => void;
+  processStatus: "running" | "stopped" | "error";
+  setProcessStatus: (status: "running" | "stopped" | "error") => void;
+  repoPath: string;
 }
 
 // Export the context
@@ -29,6 +32,8 @@ export function ServicesProvider({ children }: { children: React.ReactNode }) {
   const [skipTests, setSkipTests] = useState(false);
   const [forceUpdate, setForceUpdate] = useState(false);
   const [selectedQABox, setSelectedQABox] = useState('');
+  const [processStatus, setProcessStatus] = useState<"running" | "stopped" | "error">("stopped");
+  const [repoPath, setRepoPath] = useState('');
 
   // Load initial states from settings
   useEffect(() => {
@@ -37,12 +42,23 @@ export function ServicesProvider({ children }: { children: React.ReactNode }) {
         const settings = await window.electron.invoke('get-settings');
         const enabledServices = settings.enabledServices || [];
         const favoriteServices = settings.favoriteServices || [];
-        
         // Load QA box selection
         if (settings.selectedQABox) {
           setSelectedQABox(settings.selectedQABox);
         }
-        
+
+        if (settings.skipTests) {
+          setSkipTests(settings.skipTests);
+        }
+
+        if (settings.forceUpdate) {
+          setForceUpdate(settings.forceUpdate);
+        }
+
+        if (settings.repoPath) {
+          setRepoPath(settings.repoPath);
+        }
+
         // Initialize services with saved states
         setServicesList(services.map((service) => ({
           ...service,
@@ -75,7 +91,9 @@ export function ServicesProvider({ children }: { children: React.ReactNode }) {
         await window.electron.invoke('save-settings', {
           ...currentSettings,
           enabledServices,
-          favoriteServices
+          favoriteServices,
+          skipTests,
+          forceUpdate
         });
       } catch (error) {
         console.error('Failed to save service states:', error);
@@ -85,7 +103,7 @@ export function ServicesProvider({ children }: { children: React.ReactNode }) {
     if (servicesList.length > 0) {
       saveServicesState();
     }
-  }, [servicesList]);
+  }, [servicesList, skipTests, forceUpdate]);
 
   // Save QA box selection whenever it changes
   useEffect(() => {
@@ -148,6 +166,9 @@ export function ServicesProvider({ children }: { children: React.ReactNode }) {
     setForceUpdate,
     selectedQABox,
     setSelectedQABox,
+    processStatus,
+    setProcessStatus,
+    repoPath,
   };
 
   return (

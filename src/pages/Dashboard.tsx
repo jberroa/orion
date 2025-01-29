@@ -35,6 +35,7 @@ export function Dashboard() {
     forceUpdate,
     setSkipTests,
     setForceUpdate,
+    setProcessStatus: setContextProcessStatus,
   } = useServices();
 
   const {
@@ -49,7 +50,7 @@ export function Dashboard() {
   const [buildSteps, setBuildSteps] = useState<Step[]>([
     { id: 'folders', title: 'Initializing Tomcat Folders', status: 'pending', logs: [] },
     { id: 'properties', title: 'Creating Properties Files', status: 'pending', logs: [] },
-    // { id: 'local', title: 'Building Local Services', status: 'pending', logs: [] },
+    { id: 'local', title: 'Building Local Services', status: 'pending', logs: [] },
     // { id: 'remote', title: 'Downloading Remote Services', status: 'pending', logs: [] },
     { id: 'copy', title: 'Copying WAR Files', status: 'pending', logs: [] },
     { id: 'docker', title: 'Starting Docker Containers', status: 'pending', logs: [] }
@@ -113,7 +114,7 @@ export function Dashboard() {
     );
   };
 
-  const handlePlay = async () => {
+  const handlePlay = async (mode: "build-and-run" | "run") => {
     setBuildSheetOpen(true);
     setProcessStatus("running");
 
@@ -133,7 +134,6 @@ export function Dashboard() {
     const setStepStatus = async (stepId: string, status: Step["status"]) => {
       console.log(`Setting step ${stepId} to status:`, status);
       updateStepStatus(stepId, status);
-      await delay(100);
 
       // If status is error, mark all subsequent steps as error without clearing logs
       if (status === "error") {
@@ -173,6 +173,7 @@ export function Dashboard() {
         addStepLog('folders', `Error: ${error.message}`);
         console.error('Error initializing Tomcat folders:', error);
         await setStepStatus('folders', 'error');
+        setProcessStatus("error");
         throw error;
       }
 
@@ -202,32 +203,39 @@ export function Dashboard() {
         );
         console.error("Error creating properties files:", error);
         await setStepStatus("properties", "error");
-        return; // Exit after setting error status
+        setProcessStatus("error");
+        return;
       }
 
       // Build local services
-      // await setStepStatus('local', 'in-progress');
-      // try {
-      //   addStepLog('local', 'Starting local services build...');
-      //   window.electron.on('build-log', (data: { stepId: string, log: string }) => {
-      //     addStepLog(data.stepId, data.log);
-      //   });
-
-      //   const result = await window.electron.invoke('build-local-services', sections.enabled);
-      //   if (result.success) {
-      //     await setStepStatus('local', 'completed');
-      //   } else {
-      //     addStepLog('local', `Error building local services: ${result.error}`);
-      //     await setStepStatus('local', 'error');
-      //     return; // Exit after setting error status
-      //   }
-      // } catch (error) {
-      //   const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      //   addStepLog('local', `Error building local services: ${errorMessage}`);
-      //   console.error('Error building local services:', error);
-      //   await setStepStatus('local', 'error');
-      //   return; // Exit after setting error status
-      // }
+      if (mode === "build-and-run") {
+        await setStepStatus('local', 'in-progress');
+        try {
+          addStepLog('local', 'Starting local services build...');
+          window.electron.on('build-log', (data: { stepId: string, log: string }) => {
+            addStepLog(data.stepId, data.log);
+          });
+  
+        const result = await window.electron.invoke('build-local-services', sections.enabled, skipTests,forceUpdate);
+          if (result.success) {
+            await setStepStatus('local', 'completed');
+          } else {
+            addStepLog('local', `Error building local services: ${result.error}`);
+            await setStepStatus('local', 'error');
+            setProcessStatus("error");
+            return; // Exit after setting error status
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+          addStepLog('local', `Error building local services: ${errorMessage}`);
+          console.error('Error building local services:', error);
+          await setStepStatus('local', 'error');
+          setProcessStatus("error");
+          return; // Exit after setting error status
+        }
+      } else {
+        await setStepStatus('local', 'completed');
+      }
 
       // Download remote services
       // await setStepStatus('remote', 'in-progress');
@@ -259,7 +267,8 @@ export function Dashboard() {
         addStepLog("copy", `Error copying WAR files: ${errorMessage}`);
         console.error("Error copying WAR files:", error);
         await setStepStatus("copy", "error");
-        return; // Exit after setting error status
+        setProcessStatus("error");
+        return;
       }
 
       // Start Docker containers
@@ -286,6 +295,7 @@ export function Dashboard() {
         addStepLog('docker', `Error starting Docker containers: ${errorMessage}`);
         console.error('Error starting Docker containers:', error);
         await setStepStatus('docker', 'error');
+        setProcessStatus("error");
         return;
       }
     } catch (error) {
@@ -376,6 +386,11 @@ export function Dashboard() {
   // Add this helper function
   const isPlayDisabled = !selectedQABox;
 
+  // Sync processStatus with context
+  useEffect(() => {
+    setContextProcessStatus(processStatus);
+  }, [processStatus, setContextProcessStatus]);
+
   return (
     <div className="relative min-h-screen pb-20">
       <div className="container mx-auto p-4">
@@ -420,6 +435,7 @@ export function Dashboard() {
             forceUpdate={forceUpdate}
             onSkipTestsChange={setSkipTests}
             onForceUpdateChange={setForceUpdate}
+            processStatus={processStatus}
           />
         </div>
       </div>

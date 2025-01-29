@@ -70,7 +70,7 @@ async function ensureBuildContainers(repoPath) {
   }
 }
 
-const buildWarLocally = async (service, repoPath, event) => {
+const buildWarLocally = async (service, repoPath, event, skipTests, forceUpdate) => {
   try {
     // Check if repoPath exists
     try {
@@ -99,7 +99,13 @@ const buildWarLocally = async (service, repoPath, event) => {
     }
 
     // Execute maven build in the container
-    const buildString = `pwd && ls && env && cd /workspace/${service.subRepo ? service.parentFolder : service.folder} && mvn package ${service.buildParams ?? ''} -DskipBuildInfo -Dmaven.test.skip ${service.subRepo ? `-am -pl ${service.folder}` : ''}`;
+    const buildString = `pwd && ls && env && \
+    cd /workspace/${service.subRepo ? service.parentFolder : service.folder} && \
+    mvn package ${service.buildParams ?? ''} \
+    -DskipBuildInfo \
+    ${skipTests ? '-Dmaven.test.skip' : ''} \
+    ${forceUpdate ? '-U' : ''} \
+    ${service.subRepo ? `-am -pl ${service.folder}` : ''}`;
 
     const buildCommand = [
       'docker', 'exec',
@@ -228,7 +234,7 @@ async function startTomcatContainers(tomcatNumbers, paths) {
 
 export const setupDockerHandlers = (ipcMain) => {
 
-  ipcMain.handle('build-local-services', async (event, enabledServices) => {
+  ipcMain.handle('build-local-services', async (event, enabledServices, skipTests, forceUpdate) => {
     try {
       // Wait for app to be ready
       if (!app.isReady()) {
@@ -249,7 +255,7 @@ export const setupDockerHandlers = (ipcMain) => {
       // Build each service and collect results
       for (const service of localServices) {
         try {
-          const result = await buildWarLocally(service, settings.repoPath, event);
+          const result = await buildWarLocally(service, settings.repoPath, event, skipTests, forceUpdate);
           results.push(result);
         } catch (error) {
           results.push({ 

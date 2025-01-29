@@ -3,17 +3,32 @@ import { useServices } from '@/contexts/ServicesContext'
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useState } from 'react'
+import { ServiceCard } from '@/components/ServiceCard'
 
-export function ServiceSections() {
+interface ServiceSectionsProps {
+  showFavorites: boolean;
+  sections: any;
+  toggleFavorite: (id: string) => void;
+  toggleEnabled: (id: string) => void;
+  skipTests: boolean;
+  forceUpdate: boolean;
+  onSkipTestsChange: (value: boolean) => void;
+  onForceUpdateChange: (value: boolean) => void;
+}
+
+export function ServiceSections({ 
+  showFavorites,
+  sections,
+  toggleFavorite,
+  toggleEnabled,
+  skipTests,
+  forceUpdate,
+  onSkipTestsChange,
+  onForceUpdateChange,
+}: ServiceSectionsProps) {
   const {
-    showFavorites,
-    sections,
-    toggleFavorite,
-    toggleEnabled,
-    skipTests,
-    forceUpdate,
     setSkipTests,
-    setForceUpdate
+    setForceUpdate,
   } = useServices();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -43,7 +58,7 @@ export function ServiceSections() {
             <Checkbox
               id="skip-tests"
               checked={skipTests}
-              onCheckedChange={setSkipTests}
+              onCheckedChange={onSkipTestsChange}
             />
             <label
               htmlFor="skip-tests"
@@ -56,7 +71,7 @@ export function ServiceSections() {
             <Checkbox
               id="force-update"
               checked={forceUpdate}
-              onCheckedChange={setForceUpdate}
+              onCheckedChange={onForceUpdateChange}
             />
             <label
               htmlFor="force-update"
@@ -74,10 +89,26 @@ export function ServiceSections() {
               services={favoriteServices}
               skipTests={skipTests}
               forceUpdate={forceUpdate}
-              onSkipTestsChange={setSkipTests}
-              onForceUpdateChange={setForceUpdate}
+              onSkipTestsChange={onSkipTestsChange}
+              onForceUpdateChange={onForceUpdateChange}
               hideControls
-            />
+            >
+              {service => (
+                <ServiceCard
+                  id={service.id}
+                  name={service.name}
+                  description={service.description}
+                  enabled={service.enabled}
+                  favorite={service.favorite}
+                  parentRepo={service.parentRepo}
+                  gitUrl={service.gitUrl}
+                  branch={service.branch}
+                  onBranchChange={(value) => {
+                    // Handle branch change
+                  }}
+                />
+              )}
+            </ServiceGrid>
           </div>
         )}
         
@@ -88,10 +119,26 @@ export function ServiceSections() {
               services={enabledNotFavorite}
               skipTests={skipTests}
               forceUpdate={forceUpdate}
-              onSkipTestsChange={setSkipTests}
-              onForceUpdateChange={setForceUpdate}
+              onSkipTestsChange={onSkipTestsChange}
+              onForceUpdateChange={onForceUpdateChange}
               hideControls
-            />
+            >
+              {service => (
+                <ServiceCard
+                  id={service.id}
+                  name={service.name}
+                  description={service.description}
+                  enabled={service.enabled}
+                  favorite={service.favorite}
+                  parentRepo={service.parentRepo}
+                  gitUrl={service.gitUrl}
+                  branch={service.branch}
+                  onBranchChange={(value) => {
+                    // Handle branch change
+                  }}
+                />
+              )}
+            </ServiceGrid>
           </div>
         )}
       </div>
@@ -114,7 +161,7 @@ export function ServiceSections() {
           <Checkbox
             id="skip-tests"
             checked={skipTests}
-            onCheckedChange={setSkipTests}
+            onCheckedChange={onSkipTestsChange}
           />
           <label
             htmlFor="skip-tests"
@@ -127,7 +174,7 @@ export function ServiceSections() {
           <Checkbox
             id="force-update"
             checked={forceUpdate}
-            onCheckedChange={setForceUpdate}
+            onCheckedChange={onForceUpdateChange}
           />
           <label
             htmlFor="force-update"
@@ -141,10 +188,26 @@ export function ServiceSections() {
         services={filteredServices}
         skipTests={skipTests}
         forceUpdate={forceUpdate}
-        onSkipTestsChange={setSkipTests}
-        onForceUpdateChange={setForceUpdate}
+        onSkipTestsChange={onSkipTestsChange}
+        onForceUpdateChange={onForceUpdateChange}
         hideControls
-      />
+      >
+        {service => (
+          <ServiceCard
+            id={service.id}
+            name={service.name}
+            description={service.description}
+            enabled={service.enabled}
+            favorite={service.favorite}
+            parentRepo={service.parentRepo}
+            gitUrl={service.gitUrl}
+            branch={service.branch}
+            onBranchChange={(value) => {
+              // Handle branch change
+            }}
+          />
+        )}
+      </ServiceGrid>
     </div>
   );
 } 

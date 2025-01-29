@@ -10,6 +10,8 @@ import { dialog } from 'electron';
 
 // Recreate __dirname
 
+let isSaving = false;
+
 export const ensureSettingsFile = async () => {
   try {
     const userDataPath = app.getPath("userData");
@@ -26,10 +28,10 @@ export const ensureSettingsFile = async () => {
         instancePassword: "",
         selectedQABox: "",
         theme: "system",
-        services: {
-          favorites: [],    // Array of service IDs that are favorited
-          enabled: []       // Array of service IDs that are enabled
-        }
+        enabledServices: [],
+        favoriteServices: [],
+        skipTests: false,
+        forceUpdate: false
       };
       
       await fs.promises.mkdir(userDataPath, { recursive: true });
@@ -54,7 +56,8 @@ const getSettings = async () => {
 
     const userDataPath = app.getPath("userData");
     const configPath = path.join(userDataPath, "settings.json");
-    const settings = JSON.parse(await fs.promises.readFile(configPath, 'utf8'));
+    const fileContents = await fs.promises.readFile(configPath, 'utf8');
+    const settings = JSON.parse(fileContents);
     
     return {
       ...settings,
@@ -69,6 +72,17 @@ const getSettings = async () => {
     };
   } catch (error) {
     console.error("Error reading settings:", error);
+    
+    // Add this to see the file contents when there's an error
+    try {
+      const userDataPath = app.getPath("userData");
+      const configPath = path.join(userDataPath, "settings.json");
+      const fileContents = await fs.promises.readFile(configPath, 'utf8');
+      console.log("Raw settings file contents when error occurred:", fileContents);
+    } catch (readError) {
+      console.error("Additionally failed to read file contents:", readError);
+    }
+
     return {
       repoPath: "",
       maxLogLength: 1000,
@@ -82,24 +96,62 @@ const getSettings = async () => {
 };
 
 const saveSettings = async (settings) => {
-  const userDataPath = app.getPath("userData");
-  const configPath = path.join(userDataPath, "settings.json");
-  
-  // First, read the existing settings as backup
-  let previousSettings;
-  try {
-    previousSettings = JSON.parse(await fs.promises.readFile(configPath, 'utf8'));
-  } catch (error) {
-    console.error("Error reading previous settings for backup:", error);
-    previousSettings = null;
+  // Prevent concurrent saves
+  if (isSaving) {
+    console.log("Another save operation in progress, waiting...");
+    await new Promise(resolve => setTimeout(resolve, 100)); // Wait 100ms
+    return saveSettings(settings); // Try again
   }
-
-  // Log the settings object we're trying to save
-  console.log("Attempting to save settings:", JSON.stringify(settings, null, 2));
-
+  
+  isSaving = true;
+  console.log("Starting save operation...");
+  
   try {
-    await fs.promises.writeFile(configPath, JSON.stringify(settings, null, 2));
-    return true;
+    const userDataPath = app.getPath("userData");
+    const configPath = path.join(userDataPath, "settings.json");
+    
+    // First, read the existing settings as backup
+    let previousSettings;
+    try {
+      const previousContent = await fs.promises.readFile(configPath, 'utf8');
+      console.log("Previous file contents:", previousContent);
+      previousSettings = JSON.parse(previousContent);
+    } catch (error) {
+      console.error("Error reading previous settings for backup:", error);
+      previousSettings = null;
+    }
+
+    // Log the settings object we're trying to save
+    const settingsString = JSON.stringify(settings, null, 2);
+    console.log("New settings to save:", settingsString);
+
+    // Verify the JSON is valid before saving
+    try {
+      JSON.parse(settingsString); // Validate the JSON string
+    } catch (error) {
+      console.error("Invalid JSON being saved:", error);
+      isSaving = false;
+      return false;
+    }
+
+    // Use writeFile with the validated JSON string
+    await fs.promises.writeFile(configPath, settingsString, { flag: 'w' });
+    console.log("File written, verifying contents...");
+    
+    // Verify the file was written correctly
+    const verifyContents = await fs.promises.readFile(configPath, 'utf8');
+    console.log("Verification read contents:", verifyContents);
+    
+    try {
+      JSON.parse(verifyContents); // Validate the saved contents
+      console.log("Save operation completed successfully");
+      isSaving = false;
+      return true;
+    } catch (error) {
+      console.error("Saved file contains invalid JSON:", error);
+      console.log("File contents:", verifyContents);
+      throw error;
+    }
   } catch (error) {
     console.error("Error saving settings:", error);
     
@@ -114,6 +166,7 @@ const saveSettings = async (settings) => {
       }
     }
     
+    isSaving = false;
     return false;
   }
 };

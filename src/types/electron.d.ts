@@ -1,7 +1,7 @@
 declare global {
   interface Window {
     electron: {
-      invoke(channel: 'build-local-services', enabled: Service[]): Promise<void>;
+      invoke(channel: 'build-local-services', enabled: Service[], skipTests: boolean, forceUpdate: boolean): Promise<void>;
       invoke(channel: 'save-settings', settings: Record<string, any>): Promise<void>;
       invoke(channel: 'get-container-logs', tomcatId: number): Promise<string>;
       invoke(channel: 'get-git-branches', gitUrl: string): Promise<string[]>;
@@ -27,7 +27,6 @@ declare global {
       invoke(channel: 'copy-war-files', enabled: Service[]): Promise<void>;
       invoke(channel: 'create-properties-files', services: {
         allServices: Service[];
-        favorites: Service[];
         enabled: Service[];
     }): Promise<string[]>;
       invoke(channel: 'start-tomcat-containers', { tomcatNumbers, paths }): Promise<void>;

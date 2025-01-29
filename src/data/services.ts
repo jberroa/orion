@@ -46,7 +46,7 @@ export const services: Service[] = [
     tokenName: "DataService30",
     webPath: "data-services-3.0",
     warPath:
-      "core-services/projects/services/target/bullhorn-data-services-3.0",
+      "core-services/projects/services/src-services/data-services/target/bullhorn-data-services-3.0",
     javaVersion: 8,
     gitUrl: "git@bhsource.bullhorn.com:ATS_CRM/core-services.git",
     parentRepo: "Core Services",
@@ -76,7 +76,7 @@ export const services: Service[] = [
     tokenName: "DataEventService",
     webPath: "data-event-services",
     warPath:
-      "core-services/projects/services/target/bullhorn-data-event-services-0.1",
+      "core-services/projects/services/src-services/data-event-services/target/bullhorn-data-event-services-0.1",
     javaVersion: 8,
     gitUrl: "git@bhsource.bullhorn.com:ATS_CRM/core-services.git",
     parentRepo: "Core Services",
@@ -91,7 +91,7 @@ export const services: Service[] = [
     tokenName: "daytonaConsumerV2",
     webPath: "daytona-consumer",
     warPath:
-      "core-services/projects/services/target/bullhorn-daytona-consumer-2.0",
+      "core-services/projects/services/src-services/daytona-consumer/target/bullhorn-daytona-consumer-2.0",
     javaVersion: 8,
     gitUrl: "git@bhsource.bullhorn.com:ATS_CRM/core-services.git",
     parentRepo: "Core Services",
@@ -106,7 +106,7 @@ export const services: Service[] = [
     tokenName: "daytonaIndexV2",
     webPath: "indexing",
     warPath:
-      "core-services/projects/services/target/bullhorn-daytona-producer-0.1",
+      "core-services/projects/services/src-services/daytona-producer/target/bullhorn-daytona-producer-0.1",
     javaVersion: 8,
     gitUrl: "git@bhsource.bullhorn.com:ATS_CRM/core-services.git",
     parentRepo: "Core Services",
@@ -121,7 +121,7 @@ export const services: Service[] = [
     tokenName: "daytonaSearchV2",
     webPath: "search",
     warPath:
-      "core-services/projects/services/target/bullhorn-daytona-search-2.0",
+      "core-services/projects/services/src-services/daytona-search/target/bullhorn-daytona-search-2.0",
     javaVersion: 8,
     gitUrl: "git@bhsource.bullhorn.com:ATS_CRM/core-services.git",
     parentRepo: "Core Services",
@@ -136,7 +136,7 @@ export const services: Service[] = [
     tokenName: "EmailService",
     webPath: "email-services",
     warPath:
-      "core-services/projects/services/target/bullhorn-email-services-0.1",
+      "core-services/projects/services/src-services/email-services/target/bullhorn-email-services-0.1",
     javaVersion: 8,
     gitUrl: "git@bhsource.bullhorn.com:ATS_CRM/core-services.git",
     parentRepo: "Core Services",
@@ -151,7 +151,7 @@ export const services: Service[] = [
     tokenName: "FranklinService",
     webPath: "appointment-services",
     warPath:
-      "core-services/projects/services/target/bullhorn-franklin-services-0.1",
+      "core-services/projects/services/src-services/franklin-services/target/bullhorn-franklin-services-0.1",
     javaVersion: 8,
     gitUrl: "git@bhsource.bullhorn.com:ATS_CRM/core-services.git",
     parentRepo: "Core Services",
@@ -166,7 +166,7 @@ export const services: Service[] = [
     tokenName: "OAuthService",
     webPath: "oauth",
     warPath:
-      "core-services/projects/services/target/bullhorn-oauth-services-2.0",
+      "core-services/projects/services/src-services/oauth-services/target/bullhorn-oauth-services-2.0",
     javaVersion: 8,
     gitUrl: "git@bhsource.bullhorn.com:ATS_CRM/core-services.git",
     parentRepo: "Core Services",

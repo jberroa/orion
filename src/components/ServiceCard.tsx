@@ -37,10 +37,16 @@ export function ServiceCard({
   branch,
   onBranchChange,
 }: ServiceCardProps) {
-  const { toggleFavorite, toggleEnabled } = useServices();
+  const { toggleFavorite, toggleEnabled, processStatus } = useServices();
+  const isRunning = processStatus === "running";
+  
+  console.log(`ServiceCard ${name}:`, { processStatus, isRunning });
 
   return (
-    <Card className="overflow-hidden min-w-[350px]">
+    <Card className={cn(
+      "overflow-hidden min-w-[350px]",
+      isRunning && "opacity-75 pointer-events-none select-none"
+    )}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex flex-col gap-2">
           <CardTitle className="text-lg font-medium">{name}</CardTitle>
@@ -56,13 +62,14 @@ export function ServiceCard({
             size="icon"
             onClick={() => toggleFavorite(id)}
             className={favorite ? "text-yellow-500" : ""}
+            disabled={isRunning}
           >
             <Star
               className={cn("h-4 w-4", favorite && "fill-current text-primary")}
             />
           </Button>
 
-          <ServiceSettings />
+          <ServiceSettings disabled={isRunning} />
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -72,7 +79,8 @@ export function ServiceCard({
             gitUrl={gitUrl} 
             value={branch}
             onValueChange={onBranchChange}
-            placeholder="Select Branch" 
+            placeholder="Select Branch"
+            disabled={isRunning}
           />
           <div className="flex items-center space-x-2">
             <span className="text-sm text-muted-foreground">Enabled</span>
@@ -80,6 +88,9 @@ export function ServiceCard({
               id={`service-${id}`}
               checked={enabled}
               onCheckedChange={() => toggleEnabled(id)}
+              disabled={isRunning}
+              aria-disabled={isRunning}
+              className={cn(isRunning && "pointer-events-none")}
             />
           </div>
         </div>
