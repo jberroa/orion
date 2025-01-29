@@ -23,6 +23,8 @@ interface ServiceCardProps {
   parentRepo?: string;
   gitUrl: string;
   branch: string;
+  tomcatNumber: number;
+  javaVersion: string;
   onBranchChange: (value: string) => void;
 }
 
@@ -35,6 +37,8 @@ export function ServiceCard({
   parentRepo,
   gitUrl,
   branch,
+  tomcatNumber,
+  javaVersion,
   onBranchChange,
 }: ServiceCardProps) {
   const { toggleFavorite, toggleEnabled, processStatus } = useServices();
@@ -69,7 +73,12 @@ export function ServiceCard({
             />
           </Button>
 
-          <ServiceSettings disabled={isRunning} />
+          <ServiceSettings 
+            serviceId={id}
+            tomcatNumber={tomcatNumber}
+            javaVersion={javaVersion}
+            disabled={isRunning}
+          />
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

@@ -1,4 +1,4 @@
-import { Settings, RefreshCw,FileSearch2, RocketIcon } from "lucide-react"
+import { Settings, RefreshCw, FileSearch2, RocketIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Popover,
@@ -21,15 +21,22 @@ import {
 import { Label } from "@radix-ui/react-dropdown-menu"
 import { Separator } from "@/components/ui/separator"
 
-export function ServiceSettings() {
+interface ServiceSettingsProps {
+  serviceId: string;
+  tomcatNumber: number;
+  javaVersion: string;
+  disabled?: boolean;
+}
+
+export function ServiceSettings({ serviceId, tomcatNumber, javaVersion, disabled }: ServiceSettingsProps) {
   return (
-    <Popover>
+    <Popover >
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
+        <Button variant="ghost" size="icon" className="h-8 w-8" disabled={disabled}>
           <Settings className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80">
+      <PopoverContent className="w-80" onOpenAutoFocus={(ev) => ev.preventDefault()}>
         <div className="grid gap-4">
           <div className="space-y-2">
             <h4 className="font-medium leading-none">Service Settings</h4>
@@ -40,7 +47,7 @@ export function ServiceSettings() {
           <div className="grid gap-2">
             <div className="grid grid-cols-3 items-center gap-4">
               <Label>Tomcat</Label>
-              <Select defaultValue="1">
+              <Select defaultValue={tomcatNumber.toString()} disabled>
                 <SelectTrigger className="col-span-2 h-8">
                   <SelectValue placeholder="Select Tomcat" />
                 </SelectTrigger>
@@ -54,8 +61,8 @@ export function ServiceSettings() {
               </Select>
             </div>
             <div className="grid grid-cols-3 items-center gap-4">
-              <Label >Java</Label>
-              <Select defaultValue="8">
+              <Label>Java</Label>
+              <Select defaultValue={javaVersion} disabled>
                 <SelectTrigger className="col-span-2 h-8">
                   <SelectValue placeholder="Select Java Version" />
                 </SelectTrigger>
@@ -69,44 +76,28 @@ export function ServiceSettings() {
           </div>
           <Separator />
           <div className="flex justify-center space-x-4">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <FileSearch2 className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>View Logs</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <Button variant="ghost" size="icon" disabled>
+              <FileSearch2 className="h-4 w-4" />
+            </Button>
 
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <RefreshCw className="h-4 w-4 rotate-90" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Restart Service</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <Button variant="ghost" size="icon" disabled>
+              <RefreshCw className="h-4 w-4 rotate-90" />
+            </Button>
 
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <RocketIcon className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Deploy Service</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div className="relative">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <RocketIcon className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Build Service</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
         </div>
       </PopoverContent>

@@ -3,11 +3,15 @@ import { useServices } from '@/contexts/ServicesContext'
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useState } from 'react'
-import { ServiceCard } from '@/components/ServiceCard'
+import { Service } from '@/types/service'
 
 interface ServiceSectionsProps {
   showFavorites: boolean;
-  sections: any;
+  sections: {
+    all: Service[];
+    favorites: Service[];
+    enabled: Service[];
+  };
   toggleFavorite: (id: string) => void;
   toggleEnabled: (id: string) => void;
   skipTests: boolean;
@@ -33,14 +37,13 @@ export function ServiceSections({
 
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filterServices = (services: any[]) => {
+  const filterServices = (services: Service[]) => {
     return services.filter(service => 
       service.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
   };
 
   if (showFavorites) {
-    // For Favorites view, show two sections
     const favoriteServices = filterServices(sections.all.filter(service => service.favorite));
     const enabledNotFavorite = filterServices(sections.all.filter(service => service.enabled && !service.favorite));
 
@@ -92,23 +95,7 @@ export function ServiceSections({
               onSkipTestsChange={onSkipTestsChange}
               onForceUpdateChange={onForceUpdateChange}
               hideControls
-            >
-              {service => (
-                <ServiceCard
-                  id={service.id}
-                  name={service.name}
-                  description={service.description}
-                  enabled={service.enabled}
-                  favorite={service.favorite}
-                  parentRepo={service.parentRepo}
-                  gitUrl={service.gitUrl}
-                  branch={service.branch}
-                  onBranchChange={(value) => {
-                    // Handle branch change
-                  }}
-                />
-              )}
-            </ServiceGrid>
+            />
           </div>
         )}
         
@@ -122,23 +109,7 @@ export function ServiceSections({
               onSkipTestsChange={onSkipTestsChange}
               onForceUpdateChange={onForceUpdateChange}
               hideControls
-            >
-              {service => (
-                <ServiceCard
-                  id={service.id}
-                  name={service.name}
-                  description={service.description}
-                  enabled={service.enabled}
-                  favorite={service.favorite}
-                  parentRepo={service.parentRepo}
-                  gitUrl={service.gitUrl}
-                  branch={service.branch}
-                  onBranchChange={(value) => {
-                    // Handle branch change
-                  }}
-                />
-              )}
-            </ServiceGrid>
+            />
           </div>
         )}
       </div>
@@ -191,23 +162,7 @@ export function ServiceSections({
         onSkipTestsChange={onSkipTestsChange}
         onForceUpdateChange={onForceUpdateChange}
         hideControls
-      >
-        {service => (
-          <ServiceCard
-            id={service.id}
-            name={service.name}
-            description={service.description}
-            enabled={service.enabled}
-            favorite={service.favorite}
-            parentRepo={service.parentRepo}
-            gitUrl={service.gitUrl}
-            branch={service.branch}
-            onBranchChange={(value) => {
-              // Handle branch change
-            }}
-          />
-        )}
-      </ServiceGrid>
+      />
     </div>
   );
-} 
+}
