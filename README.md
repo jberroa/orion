@@ -1,50 +1,94 @@
-# React + TypeScript + Vite
+# Orion - Service Management Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Orion is a modern desktop application built with Electron, React, and TypeScript that provides a streamlined interface for managing and controlling multiple services across different Tomcat instances.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 🚀 Service Management Dashboard
+- 🔄 Real-time Service Status Monitoring
+- 🐳 Container-based Service Deployment
+- 📊 Build Progress Tracking
+- 🔍 QA Environment Selection
+- ⚡ Fast Service Building and Deployment
+- 📝 Live Container Logs Viewing
+- ⭐ Service Favoriting System
 
-## Expanding the ESLint configuration
+## Prerequisites
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+Before running this application, ensure you have the following installed:
 
-- Configure the top-level `parserOptions` property like this:
+- Node.js (v16 or higher)
+- Podman (Required for container management)
+- Git
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+## Installation
+
+1. Clone the repository:
+```bash
+git clone [repository-url]
+cd orion
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
-
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
-
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+2. Install dependencies:
+```bash
+npm install
 ```
+
+## Development
+
+To start the application in development mode:
+
+```bash
+npm run dev
+```
+
+This will start both the Electron process and the Vite dev server.
+
+## Building
+
+To build the application:
+
+```bash
+npm run build
+```
+
+## Usage
+
+1. **QA Box Selection**: Select your QA environment from the dropdown menu.
+
+2. **Service Management**:
+   - Browse available services in the grid view
+   - Toggle services on/off
+   - Mark services as favorites
+   - View service details and configurations
+
+3. **Build & Deploy**:
+   - Choose between building and running or just running services
+   - Monitor build progress in real-time
+   - View detailed build logs
+   - Configure build options (skip tests, force update)
+
+4. **Container Management**:
+   - Monitor Tomcat container statuses
+   - View live container logs
+   - Start/stop containers as needed
+
+## Architecture
+
+The application uses a modern stack:
+
+- **Frontend**: React + TypeScript + Vite
+- **Desktop Runtime**: Electron
+- **Container Technology**: Podman
+- **UI Components**: Shadcn UI
+- **State Management**: React Context
+- **Routing**: React Router
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+

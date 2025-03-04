@@ -298,19 +298,14 @@ export const setupDockerHandlers = (ipcMain) => {
 
   ipcMain.handle('get-container-logs', async (event, tomcatId) => {
     try {
-      const { stdout: containerId } = await execAsync(
-        `podman ps --filter "name=tomcat-${tomcatId}" --format "{{.ID}}"`
-      );
-
-      if (!containerId.trim()) {
-        return 'No container found for this Tomcat instance';
-      }
-
+      const containerName = `tomcat${tomcatId}`;
+      
+      // Simply get the last 1000 lines each time
       const { stdout: logs } = await execAsync(
-        `podman logs ${containerId.trim()} --tail 1000`
+        `podman logs --follow=false --tail 1000 ${containerName}`
       );
 
-      return logs;
+      return logs || 'No logs available';
     } catch (error) {
       console.error('Error fetching container logs:', error);
       throw error;

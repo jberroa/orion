@@ -76,17 +76,8 @@ export function ServiceGrid({
           {filteredServices.map((service) => (
             <ServiceCard
               key={service.id}
-              id={service.id}
-              name={service.name}
-              description={service.description}
-              enabled={service.enabled}
-              favorite={service.favorite}
-              parentRepo={service.parentRepo}
-              gitUrl={service.gitUrl}
-              branch={service.branch}
-              tomcatNumber={service.tomcatNumber}
-              javaVersion={service.javaVersion.toString()}
-              onBranchChange={(branch) => updateServiceBranch(service.id, branch)}
+              service={service}
+              onBranchChange={(value) => updateServiceBranch(service.id, value)}
             />
           ))}
         </div>

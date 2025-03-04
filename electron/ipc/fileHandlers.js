@@ -5,10 +5,8 @@ import fs from 'fs';
 import fsExtra from 'fs-extra';
 import {config} from '../../src/data/config.js'
 import { getMachineConfig } from '../../src/data/config.js'
-import { tokenReplacements } from "../../resources/tokens/tokenReplacements.js";
+import { tokenReplacements } from "../../src/tokens/tokenReplacements.js";
 import { dialog } from 'electron';
-
-// Recreate __dirname
 
 let isSaving = false;
 

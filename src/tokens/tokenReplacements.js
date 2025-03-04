@@ -533,3 +533,8 @@ export default {
     return defaultValue;
   }
 }
+
+// Add CommonJS fallback
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { tokenReplacements };
+}

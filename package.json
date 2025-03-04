@@ -85,9 +85,6 @@
     "dmg": {
       "sign": false
     },
-    "asar": {
-      "smartUnpack": true
-    },
     "files": [
       "dist/**/*",
       "electron/**/*",
@@ -96,9 +93,21 @@
     ],
     "extraResources": [
       {
-        "from": "resources/",
-        "to": "resources/"
+        "from": "resources",
+        "to": "resources",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "docker",
+        "to": "docker",
+        "filter": ["**/*"]
       }
+    ],
+    "asar": {
+      "smartUnpack": true
+    },
+    "asarUnpack": [
+      "resources/**/*"
     ]
   }
 }

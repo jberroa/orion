@@ -359,6 +359,9 @@ export function Dashboard() {
   const handleTomcatClick = async (tomcatId: number) => {
     setSelectedTomcat(tomcatId);
     setDrawerOpen(true);
+    
+    // Reset state for new container
+    setContainerLogs('');
 
     // Initial fetch
     await fetchContainerLogs(tomcatId);
